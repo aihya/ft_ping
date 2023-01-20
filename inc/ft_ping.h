@@ -7,8 +7,11 @@
 # include <sys/socket.h>
 # include <netdb.h>
 # include <arpa/inet.h>
+# include <signal.h>
+# include <unistd.h>
+# include <string.h>
 # include <strings.h> // TODO: remove this line and bzero function in main
-#include <netinet/ip_icmp.h>
+# include <netinet/ip_icmp.h>
 
 
 typedef struct s_icmp
