@@ -13,6 +13,15 @@
 # include <strings.h> // TODO: remove this line and bzero function in main
 # include <netinet/ip_icmp.h>
 
+typedef struct s_proto
+{
+    void (*func_init) (void);
+    void (*func_proc) (void);
+    void (*func_send) (void);
+    struct sockaddr *src_sa;
+    struct sockaddr *dst_sa;
+    int ipproto_type;
+}   t_proto;
 
 typedef struct s_icmp
 {
@@ -28,9 +37,6 @@ typedef struct s_icmp
 
 t_icmp g_icmp = {0};
 
-uint16_t icmp_checksum();
-void setup_socket();
-void setup_icmp_send();
-void setup_dst_ai(const char * name);
+int calculate_checksum(int type, int checksum, int id, int seq)
 
 #endif
