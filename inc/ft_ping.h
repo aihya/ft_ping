@@ -16,7 +16,7 @@
 typedef struct s_proto
 {
     void (*func_init) (void);
-    void (*func_proc) (void);
+    void (*func_proc) (int);
     void (*func_send) (int);
     struct sockaddr *dst_sa;
     struct addrinfo *dst_ai;
