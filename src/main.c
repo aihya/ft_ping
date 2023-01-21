@@ -1,5 +1,4 @@
 #include "ft_ping.h"
-#include "strings.h"
 
 // void init_v4(void);
 void proc_v4(void);
@@ -83,7 +82,6 @@ int main(int argc, char **argv)
 	if (ai_ptr)
 	{
 		char buf[256];
-		bzero(buf);
 		printf("%s\n", inet_ntop(ai_ptr->ai_family, ai_ptr, ai_ptr, buf, 256));
 	}
 	send_v4();
