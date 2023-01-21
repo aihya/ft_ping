@@ -30,21 +30,31 @@ void proc_v4()
 
 void send_v4(int sockfd)
 {
-	char buff[256];
+	char buff[64];
+	struct icmp *icmp;
 	int checksum;
 
+	icmp = (struct icmp *)buff;
+	icmp->icmp_type = ICMP_ECHO;
+	icmp->icmp_code = 0;
+	icmp->icmp_cksum = 0x0000;
+	icmp->icmp_id = 0xff & getpid();
+	icmp->icmp_seq = 0;
+	memcpy(icmp->icmp_data, 0xa5, 56);
 	// Setup the ICMP packet header
 	// checksum = calculate_checksum();
-	buff[0] = 0x08;	// type
-	buff[1] = 0x00;	// code
-	buff[2] = 0x00;	// checksum hh
-	buff[3] = 0x00;	// checksum hh
-	buff[4] = 0x13;	// id hh
-	buff[5] = 0x37;	// id hh
-	buff[6] = 0x00;	// seq
-	buff[7] = 0x01;	// seq
+	// buff[0] = 0x08;	// type
+	// buff[1] = 0x00;	// code
+	// buff[2] = 0x00;	// checksum hh
+	// buff[3] = 0x00;	// checksum hh
+	// buff[4] = 0x13;	// id hh
+	// buff[5] = 0x37;	// id hh
+	// buff[6] = 0x00;	// seq
+	// buff[7] = 0x01;	// seq
 
-	int ret = sendto(sockfd, buff, 64, 0, proto_v4.dst_sa, sizeof(proto_v4.dst_sa));
+
+
+	int ret = sendto(sockfd, buff, 64, 0, proto_v4.dst_sa, proto_v4.dst_sa->sa_len);
 	if (ret == -1)
 		printf("sendto failed with error code: %d\n", ret);
 }
