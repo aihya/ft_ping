@@ -76,7 +76,7 @@ int socket_setup()
 		return (sockfd);
 
 	// setsockopt could be used to set the timeout option or the socket buffer size.
-	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, size, sizeof(int)) == -1)
+	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(int)) == -1)
 	{
 		perror("%s");
 		exit(1);
