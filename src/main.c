@@ -26,15 +26,20 @@ t_proto proto_v4 = {
 void send_v4(int sockfd)
 {
 	char buff[64];
-	struct icmp icmp;
+	struct icmp *icmp;
+	struct timeval tv;
 
 	// Setup the ICMP packet header
-	icmp.icmp_id    = 42;
-	icmp.icmp_type  = ICMP_ECHO;
-	icmp.icmp_cksum = 0x0000;
-	icmp.icmp_code  = 0;
-	icmp.icmp_seq   = 0;
-	memset(icmp.icmp_data, 0xa5, 56);
+	icmp = (struct icmp *)buff;
+	icmp->icmp_id    = 42;
+	icmp->icmp_type  = ICMP_ECHO;
+	icmp->icmp_cksum = 0x0000;
+	icmp->icmp_code  = 0;
+	icmp->icmp_seq   = 0;
+	memset(icmp->icmp_data, 0x00, 56);
+
+	// Setup data section
+	gettimeofday((struct timeval *)(icmp->icmp_data), NULL);
 
 	// Send full packet
 	int ret = sendto(sockfd, &icmp, 64, 0, proto_v4.dst_sa, proto_v4.dst_ai->ai_addrlen);
@@ -50,6 +55,10 @@ void proc_v4(int sockfd)
 	struct msghdr msghdr;
 	struct ip *ip;
 	struct icmp *icmp;
+	struct timeval tvcurr;
+	struct timeval tvrecv;
+	double time;
+
 	memset(buff, 0xa5, 64);
 
 	iov.iov_base = buff;
@@ -59,6 +68,7 @@ void proc_v4(int sockfd)
 	msghdr.msg_iovlen = 1;
 
 	received = recvmsg(sockfd, &msghdr, 0);
+	gettimeofday(&tvcurr, NULL);
 
 	ip = (struct ip *)(iov.iov_base);
 	if (ip->ip_p == IPPROTO_ICMP)
@@ -72,15 +82,19 @@ void proc_v4(int sockfd)
 	// Message shown on error
 	// printf("From %s (%s) icmp_seq=%d ");
 
+
 	// Message shown on success
 	char buf[256];
 	inet_ntop(
-		proto_v4.dst_ai->ai_family, 
-		&((struct sockaddr_in *)proto_v4.dst_ai->ai_addr)->sin_addr, 
-		buf, 
-		256);
-	printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d\n", 64, buf, buf, icmp->icmp_seq, ip->ip_ttl);
-	printf("%d %d\n", icmp->icmp_type, icmp->icmp_code);
+		proto_v4.dst_ai->ai_family,
+		&((struct sockaddr_in *)proto_v4.dst_ai->ai_addr)->sin_addr,
+		buf,
+		256
+	);
+
+	tvrecv = *(struct timeval *)(icmp->icmp_data);
+	time = tvrecv.tv_sec * 1000 + tvrecv.tv_usec / 1000;
+	printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d time=%.4f\n", 64, buf, buf, icmp->icmp_seq, ip->ip_ttl, time);
 }
 
 int calculate_checksum(int id, int seq)
