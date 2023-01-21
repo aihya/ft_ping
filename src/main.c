@@ -1,18 +1,18 @@
 #include "ft_ping.h"
 
-// int init_v4(void);
+void init_v4(void);
+void proc_v4(void);
+void send_v4(void);
 // int init_v6(void);
-// int proc_v4(void);
 // int proc_v6(void);
-// int send_v4(void);
 // int send_v6(void);
 
-// t_proto proto_v4 = {
-// 	init_v4, 
-// 	proc_v4, 
-// 	send_v4, 
-// 	IPPROTO_ICMP
-// };
+t_proto proto_v4 = {
+	init_v4, 
+	proc_v4, 
+	send_v4, 
+	IPPROTO_ICMP
+};
 
 // t_proto proto_v6 = {
 // 	init_v6, 
@@ -20,6 +20,16 @@
 // 	send_v6, 
 // 	IPPROTO_ICMPV6
 // };
+
+void proc_v4()
+{
+
+}
+
+void send_v4()
+{
+
+}
 
 int calculate_checksum(int type, int checksum, int id, int seq)
 {
@@ -60,5 +70,11 @@ int main(int argc, char **argv)
 	error = resolve_destination(argv[1]);
 	if (error)
 		return (gai_error(argv[0], argv[1], error));
+
+	#ifndef IPPROTO_ICMPV4
+		printf("zlayga\n");
+	#endif
+
+	send_v4();
 	return (0);
 }
