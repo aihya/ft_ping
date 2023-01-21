@@ -54,7 +54,7 @@ void send_v4(int sockfd)
 
 
 
-	int ret = sendto(sockfd, buff, 64, 0, proto_v4.dst_sa, (struct sockaddr_in *)(proto_v4.dst_sa)->sa_len);
+	int ret = sendto(sockfd, buff, 64, 0, proto_v4.dst_sa, sizeof(proto_v4.dst_sa));
 	if (ret == -1)
 		printf("sendto failed with error code: %d\n", ret);
 }
