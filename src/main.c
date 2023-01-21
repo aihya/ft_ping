@@ -93,22 +93,11 @@ void proc_v4(int sockfd)
 		256
 	);
 
-	char hbuf[256];
-	char sbuf[256];
-
-	
-	printf("%s\n", getnameinfo(proto_v4.dst_sa, 
-		proto_v4.dst_ai->ai_addrlen, 
-		hbuf, 
-		sizeof(hbuf), 
-		sbuf, 
-		sizeof(sbuf), 
-		NI_NUMERICHOST | NI_NUMERICSERV
-	));
+	struct hostent *ent = gethostbyname(buf);
 
 	tvrecv = *(struct timeval *)(icmp->icmp_data);
 	time = (tvcurr.tv_sec - tvrecv.tv_sec) * 1000 + (tvcurr.tv_usec - tvrecv.tv_usec) / 1000;
-	printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d time=%f\n", 64, buf, buf, icmp->icmp_seq, ip->ip_ttl, time);
+	printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d time=%f\n", 64, ent->h_name, buf, icmp->icmp_seq, ip->ip_ttl, time);
 }
 
 int calculate_checksum(int id, int seq)
