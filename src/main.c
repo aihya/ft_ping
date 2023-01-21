@@ -53,8 +53,8 @@ void send_v4(int sockfd)
 	// buff[7] = 0x01;	// seq
 
 
-
-	int ret = sendto(sockfd, buff, 64, 0, proto_v4.dst_sa, sizeof(proto_v4.dst_sa));
+	printf("%d\n", sockfd);
+	int ret = sendto(sockfd, buff, 64, 0, proto_v4.dst_sa, proto_v4.dst_ai->ai_addrlen);
 	if (ret == -1)
 		printf("sendto failed with error code: %d\n", ret);
 }
@@ -134,7 +134,8 @@ int main(int argc, char **argv)
 		printf("%s\n", buf);
 	}
 
-	proto_v4.dst_sa = ai_ptr->ai_addr;
+	proto_v4.dst_ai = ai_ptr;
+	proto_v4.dst_sa = proto_v4.dst_ai->ai_addr;
 
 	int sockfd = socket_setup();
 	proto_v4.func_send(sockfd);
