@@ -71,7 +71,7 @@ int main(int argc, char **argv)
 	if (error)
 		return (gai_error(argv[0], argv[1], error));
 
-	#ifndef IPPROTO_ICMPV4
+	#ifdef IPPROTO_ICMPV4
 		printf("zlayga\n");
 	#endif
 
