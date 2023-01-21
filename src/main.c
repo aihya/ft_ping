@@ -81,6 +81,7 @@ int socket_setup()
 		perror("%s");
 		exit(1);
 	}
+	printf("%d\n", sockfd);
 	return (0);
 }
 
