@@ -60,7 +60,7 @@ void proc_v4(int sockfd)
 	received = recvmsg(sockfd, &msghdr, 0);
 
 	ip = (struct ip *)(iov.iov_base);
-	icmp = (struct icmp *)(iov.iov_base + sizeof(ip));
+	icmp = (struct icmp *)(iov.iov_base + sizeof(struct ip));
 	printf("received: %d\n", received);
 	printf("%d %d\n", icmp->icmp_type, icmp->icmp_code);
 }
