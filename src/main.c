@@ -36,7 +36,7 @@ int calculate_checksum(int type, int checksum, int id, int seq)
 	return 0xFFFF - (type + checksum + id + seq);
 }
 
-int resolve_destination(char *target, struct addrinfo *ai_ptr)
+int resolve_destination(char *target, struct addrinfo **ai_ptr)
 {
 	struct addrinfo hints;
 	struct addrinfo *result;
@@ -54,7 +54,7 @@ int resolve_destination(char *target, struct addrinfo *ai_ptr)
 		if (ptr->ai_family == AF_INET)
 			break;
 	}
-	ai_ptr = ptr;
+	*ai_ptr = ptr;
 	return (0);
 }
 
@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 		return (1);
 	}
 
-	error = resolve_destination(argv[1], ai_ptr);
+	error = resolve_destination(argv[1], &ai_ptr);
 	if (error)
 		return (gai_error(argv[0], argv[1], error));
 
