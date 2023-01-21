@@ -50,6 +50,7 @@ void proc_v4(int sockfd)
 	struct msghdr msghdr;
 	struct ip *ip;
 	struct icmp *icmp;
+	memset(buff, 0xa5, 64);
 
 	iov.iov_base = buff;
 	iov.iov_len = 64;
