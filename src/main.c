@@ -1,4 +1,5 @@
 #include "ft_ping.h"
+#include "strings.h"
 
 // void init_v4(void);
 void proc_v4(void);
@@ -7,12 +8,12 @@ void send_v4(void);
 // int proc_v6(void);
 // int send_v6(void);
 
-// t_proto proto_v4 = {
-// 	init_v4, 
-// 	proc_v4, 
-// 	send_v4, 
-// 	IPPROTO_ICMP
-// };
+t_proto proto_v4 = {
+	NULL, 
+	proc_v4, 
+	send_v4, 
+	IPPROTO_ICMP
+};
 
 // t_proto proto_v6 = {
 // 	init_v6, 
@@ -36,7 +37,7 @@ int calculate_checksum(int type, int checksum, int id, int seq)
 	return 0xFFFF - (type + checksum + id + seq);
 }
 
-int resolve_destination(char *target)
+int resolve_destination(char *target, struct addrinfo *ai_ptr)
 {
 	struct addrinfo hints;
 	struct addrinfo *result;
@@ -45,9 +46,16 @@ int resolve_destination(char *target)
 
 	hints.ai_family = AF_INET;
 	hints.ai_protocol = IPPROTO_TCP;
+	hints.ai_socktype = SOCK_DGRAM;
 	ret = getaddrinfo(target, "http", &hints, &result);
 	if (ret)
 		return (ret);
+	for (ptr = result; ptr != NULL; ptr = ptr->ai_next)
+	{
+		if (ptr->ai_family == AF_INET)
+			break;
+	}
+	ai_ptr = ptr;
 	return (0);
 }
 
@@ -60,6 +68,7 @@ int gai_error(char *exe, char *dest, int error)
 int main(int argc, char **argv)
 {
 	int error;
+	struct addrinfo *ai_ptr;
 
 	if (argc == 1)
 	{
@@ -67,14 +76,16 @@ int main(int argc, char **argv)
 		return (1);
 	}
 
-	error = resolve_destination(argv[1]);
+	error = resolve_destination(argv[1], ai_ptr);
 	if (error)
 		return (gai_error(argv[0], argv[1], error));
 
-	#ifndef IPPROTO_ICMPV4
-		printf("zlayga\n");
-	#endif
-
+	if (ai_ptr)
+	{
+		char buf[256];
+		bzero(buf);
+		printf("%s\n", inet_ntop(ai_ptr->ai_family, ai_ptr, ai_ptr, buf, 256));
+	}
 	send_v4();
 	return (0);
 }
