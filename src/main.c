@@ -51,7 +51,7 @@ void proc_v4(int sockfd)
 	struct icmp *icmp;
 
 	iov.iov_base = buff;
-	iov.iov_len = 100;
+	iov.iov_len = 64;
 
 	msghdr.msg_iov = &iov;
 	msghdr.msg_iovlen = 1;
