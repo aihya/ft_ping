@@ -41,7 +41,7 @@ void send_v4(int sockfd)
 	// gettimeofday((struct timeval *)(icmp->icmp_data), NULL);
 
 	// Send full packet
-	int ret = sendto(sockfd, buff, 64, 0, proto_v4.dst_sa, proto_v4.dst_ai->ai_addrlen);
+	int ret = sendto(sockfd, buff, sizeof(buff), 0, proto_v4.dst_sa, proto_v4.dst_ai->ai_addrlen);
 	if (ret == -1)
 		printf("sendto failed with error code: %d\n", ret);
 }
