@@ -116,6 +116,9 @@ int socket_setup()
 		perror("%s");
 		exit(1);
 	}
+
+	int trcv = 1000;
+	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&trcv, sizeof(trcv)))
 	return (sockfd);
 }
 
