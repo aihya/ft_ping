@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 	if (ai_ptr)
 	{
 		char buf[256];
-		inet_ntop(ai_ptr->ai_family, &(((struct sockaddr_in *)ai_ptr->ai_addr)->sin_addr), buf, 256);
+		inet_ntop(ai_ptr->ai_family, ((struct sockaddr_in *)ai_ptr->ai_addr)->sin_addr, buf, 256);
 		printf("%s\n", buf);
 	}
 	send_v4();
