@@ -76,7 +76,7 @@ void proc_v4(int sockfd)
 	if (ip->ip_p == IPPROTO_ICMP)
 		printf("IPPROTO_ICMP\n");
 
-	icmp = (struct icmp *)(iov.iov_base + (ip->ip_hl << 2));
+	icmp = (struct icmp *)(iov.iov_base + (ip->ip_hl));
 	if (icmp->icmp_type == ICMP_ECHOREPLY)
 		printf("ICMP_ECHOREPLY %d\n", icmp->icmp_id);
 
