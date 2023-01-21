@@ -94,7 +94,7 @@ void proc_v4(int sockfd)
 
 	tvrecv = *(struct timeval *)(icmp->icmp_data);
 	time = (tvrecv.tv_sec - tvcurr.tv_sec) * 1000 + (tvrecv.tv_usec - tvcurr.tv_usec) / 1000;
-	printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d time=%.4f\n", 64, buf, buf, icmp->icmp_seq, ip->ip_ttl, time);
+	printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d time=%f\n", 64, buf, buf, icmp->icmp_seq, ip->ip_ttl, time);
 }
 
 int calculate_checksum(int id, int seq)
