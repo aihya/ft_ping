@@ -38,8 +38,8 @@ void send_v4(int sockfd)
 	icmp->icmp_seq   = 2;
 	memset(icmp->icmp_data, 0xa5, 56);
 
-	// Setup data section
-	gettimeofday((struct timeval *)(icmp->icmp_data), NULL);
+	// // Setup data section
+	// gettimeofday((struct timeval *)(icmp->icmp_data), NULL);
 
 	// Send full packet
 	int ret = sendto(sockfd, &icmp, 64, 0, proto_v4.dst_sa, proto_v4.dst_ai->ai_addrlen);
