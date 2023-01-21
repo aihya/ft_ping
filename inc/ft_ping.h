@@ -37,6 +37,6 @@ typedef struct s_icmp
 
 t_icmp g_icmp = {0};
 
-int calculate_checksum(int type, int checksum, int id, int seq)
+int calculate_checksum(int type, int checksum, int id, int seq);
 
 #endif

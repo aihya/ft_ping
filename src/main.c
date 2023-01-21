@@ -28,6 +28,14 @@ int calculate_checksum(int type, int checksum, int id, int seq)
 
 int main(int argc, char **argv)
 {
-	
+	struct addrinfo ai;
+	struct addrinfo hints;
+	struct addrinfo **res;
+
+	hints.ai_family = AF_INET;
+	hints.ai_protocol = IPPROTO_TCP;
+	int ret = getaddrinfo("google.com", "http", &hints, res);
+
+	printf("%d\n", ret);
 	return (0);
 }
