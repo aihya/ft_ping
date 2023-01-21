@@ -38,7 +38,7 @@ void send_v4(int sockfd)
 	memset(icmp->icmp_data, 0xa5, 56);
 
 	// // Setup data section
-	// gettimeofday((struct timeval *)(icmp->icmp_data), NULL);
+	gettimeofday((struct timeval *)(icmp->icmp_data), NULL);
 
 	// Send full packet
 	int ret = sendto(sockfd, buff, sizeof(buff), 0, proto_v4.dst_sa, proto_v4.dst_ai->ai_addrlen);
@@ -94,6 +94,8 @@ void proc_v4(int sockfd)
 	);
 
 	tvrecv = *(struct timeval *)(icmp->icmp_data);
+
+	printf("[2]: %lld\n", tvrecv.tv_sec);
 	time = (tvcurr.tv_sec - tvrecv.tv_sec) * (uint64_t)1000 + (tvcurr.tv_usec - tvrecv.tv_usec) / (uint64_t)1000;
 	printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d time=%f\n", 64, buf, buf, icmp->icmp_seq, ip->ip_ttl, time);
 }
