@@ -97,7 +97,7 @@ void proc_v4(int sockfd)
 	gettimeofday(&tvcurr, NULL);
 	time  = (tvcurr.tv_sec  - tvrecv.tv_sec)  * 1000;
 	time += (tvcurr.tv_usec - tvrecv.tv_usec) / 1000;
-	time += (tvcurr.tv_usec - tvrecv.tv_usec) % 100;
+	// time += (tvcurr.tv_usec - tvrecv.tv_usec) % 100;
 	printf("%lf\n", time);
 	printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d time=%.2lf ms\n", 64, buf, buf, icmp->icmp_seq, ip->ip_ttl, time);
 }
