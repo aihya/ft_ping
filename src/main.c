@@ -117,8 +117,9 @@ int socket_setup()
 		exit(1);
 	}
 
-	int trcv = 1000;
-	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &trcv, sizeof(int)) == -1)
+	struct timeval trcv;
+	trcv.tv_sec = 1;
+	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &trcv, sizeof(struct timeval)) == -1)
 	{
 		perror("SO_RCVTIMEO");
 		exit(1);
