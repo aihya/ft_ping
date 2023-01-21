@@ -54,7 +54,7 @@ void send_v4(int sockfd)
 
 
 
-	int ret = sendto(sockfd, buff, 64, 0, proto_v4.dst_sa, proto_v4.dst_sa->sin_len);
+	int ret = sendto(sockfd, buff, 64, 0, proto_v4.dst_sa, proto_v4.dst_sa.sin_len);
 	if (ret == -1)
 		printf("sendto failed with error code: %d\n", ret);
 }
