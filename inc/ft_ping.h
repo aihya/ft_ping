@@ -1,7 +1,6 @@
 #ifndef FT_PING_H
 # define FT_PING_H
 
-# include <linux/ip.h>
 # include <stdio.h>
 # include <stdlib.h>
 # include <sys/types.h>
@@ -13,6 +12,7 @@
 # include <string.h>
 # include <strings.h> // TODO: remove this line and bzero function in main
 # include <netinet/ip_icmp.h>
+# include <netinet/ip.h>
 
 typedef struct s_proto
 {
