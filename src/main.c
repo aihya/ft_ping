@@ -43,7 +43,7 @@ int resolve_destination(char *target)
 
 int gai_error(char *exe, char *dest, int error)
 {
-	fprintf(stderr, "%s: %s: %s", exe, dest, gai_strerror(error));
+	fprintf(stderr, "%s: %s: %s\n", exe, dest, gai_strerror(error));
 	return (1);
 }
 
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 
 	if (argc == 1)
 	{
-		fprintf(stderr, "%s: usage error: Destination address required", argv[0]);
+		fprintf(stderr, "%s: usage error: Destination address required\n", argv[0]);
 		return (1);
 	}
 
