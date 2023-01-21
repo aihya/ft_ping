@@ -88,7 +88,7 @@ void proc_v4(int sockfd)
 	char buf[256];
 	inet_ntop(
 		proto_v4.dst_ai->ai_family,
-		&((struct sockaddr_in *)proto_v4.dst_ai->ai_addr)->sin_addr,
+		&((struct sockaddr_in *)proto_v4.dst_sa)->sin_addr,
 		buf,
 		256
 	);
