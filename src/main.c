@@ -31,17 +31,15 @@ void proc_v4()
 void send_v4(int sockfd)
 {
 	char buff[64];
-	struct icmp *icmp;
-	int checksum;
+	struct icmp icmp;
 
-	icmp = (struct icmp *)buff;
-	icmp->icmp_type = ICMP_ECHO;
-	icmp->icmp_code = 0;
-	icmp->icmp_cksum = 0x0000;
-	icmp->icmp_id = 0xff & getpid();
-	icmp->icmp_seq = 0;
-	memset(icmp->icmp_data, 0xa5, 56);
 	// Setup the ICMP packet header
+	icmp.icmp_type = ICMP_ECHO;
+	icmp.icmp_code = 0;
+	icmp.icmp_cksum = 0x0000;
+	icmp.icmp_id = 0xff & getpid();
+	icmp.icmp_seq = 0;
+	memset(icmp.icmp_data, 0xa5, 56);
 	// checksum = calculate_checksum();
 	// buff[0] = 0x08;	// type
 	// buff[1] = 0x00;	// code
@@ -53,8 +51,8 @@ void send_v4(int sockfd)
 	// buff[7] = 0x01;	// seq
 
 
-	// printf("%d\n", sockfd);
-	int ret = sendto(sockfd, buff, 64, 0, proto_v4.dst_sa, proto_v4.dst_ai->ai_addrlen);
+	printf("%d\n", sockfd);
+	int ret = sendto(sockfd, &icmp, 64, 0, proto_v4.dst_sa, proto_v4.dst_ai->ai_addrlen);
 	if (ret == -1)
 		printf("sendto failed with error code: %d\n", ret);
 }
