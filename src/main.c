@@ -9,8 +9,8 @@ void send_v4(int sockfd);
 
 t_proto proto_v4 = {
 	NULL,
-	proc_v4,
-	send_v4,
+	&proc_v4,
+	&send_v4,
 	NULL,
 	NULL,
 	IPPROTO_ICMP
