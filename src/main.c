@@ -120,7 +120,7 @@ int socket_setup()
 	int trcv = 1000;
 	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&trcv, sizeof(trcv)) == -1)
 	{
-		perror("%s");
+		perror("SO_RCVTIMEO");
 		exit(1);
 	}
 	return (sockfd);
