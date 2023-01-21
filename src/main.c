@@ -111,15 +111,15 @@ int socket_setup()
 		return (sockfd);
 
 	// setsockopt could be used to set the timeout option or the socket buffer size.
-	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(int)) == -1)
+	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(int)) < 0)
 	{
 		perror("%s");
 		exit(1);
 	}
 
 	struct timeval trcv;
-	trcv.tv_sec = 1;
-	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (struct timeval *)&trcv, sizeof(struct timeval)) == -1)
+	trcv.tv_sec = 5;
+	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (struct timeval *)&trcv, sizeof(struct timeval)) < 0)
 	{
 		perror("SO_RCVTIMEO");
 		exit(1);
