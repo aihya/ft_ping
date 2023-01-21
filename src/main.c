@@ -124,7 +124,7 @@ int main(int argc, char **argv)
 		printf("%s\n", buf);
 	}
 
-	proto_v4.dst_sa = (struct sockaddr *)ai_ptr->ai_addr;
+	proto_v4.dst_sa = (struct sockaddr *)ai_ptr;
 
 	int sockfd = socket_setup();
 	proto_v4.func_send(sockfd);
