@@ -40,7 +40,7 @@ void send_v4(int sockfd)
 	icmp->icmp_cksum = 0x0000;
 	icmp->icmp_id = 0xff & getpid();
 	icmp->icmp_seq = 0;
-	memcpy(icmp->icmp_data, 0xa5, 56);
+	memset(icmp->icmp_data, 0xa5, 56);
 	// Setup the ICMP packet header
 	// checksum = calculate_checksum();
 	// buff[0] = 0x08;	// type
