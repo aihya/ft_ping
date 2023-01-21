@@ -31,7 +31,7 @@ void send_v4(int sockfd)
 
 	// Setup the ICMP packet header
 	icmp = (struct icmp *)buff;
-	icmp->icmp_id    = 42;
+	icmp->icmp_id    = 41;
 	icmp->icmp_type  = ICMP_ECHO;
 	icmp->icmp_cksum = 0x0000;
 	icmp->icmp_code  = 0;
