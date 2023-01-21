@@ -2,15 +2,17 @@
 
 // void init_v4(void);
 void proc_v4(void);
-void send_v4(void);
+void send_v4(int sockfd);
 // int init_v6(void);
 // int proc_v6(void);
 // int send_v6(void);
 
 t_proto proto_v4 = {
-	NULL, 
-	proc_v4, 
-	send_v4, 
+	NULL,
+	proc_v4,
+	send_v4,
+	NULL,
+	NULL,
 	IPPROTO_ICMP
 };
 
@@ -26,14 +28,30 @@ void proc_v4()
 
 }
 
-void send_v4()
+void send_v4(int sockfd)
 {
+	char buff[256];
+	int checksum;
 
+	// Setup the ICMP packet header
+	// checksum = calculate_checksum();
+	buff[0] = 0x08;	// type
+	buff[1] = 0x00;	// code
+	buff[2] = 0x00;	// checksum hh
+	buff[3] = 0x00;	// checksum hh
+	buff[4] = 0x13;	// id hh
+	buff[5] = 0x37;	// id hh
+	buff[6] = 0x00;	// seq
+	buff[7] = 0x01;	// seq
+
+	int ret = sendto(sockfd, buff, sizeof(buff), 0, proto_v4.dst_sa, sizeof(proto_v4.dst_sa));
+	if (ret == -1)
+		printf("sendto failed with error code: %d\n", ret);
 }
 
-int calculate_checksum(int type, int checksum, int id, int seq)
+int calculate_checksum(int id, int seq)
 {
-	return 0xFFFF - (type + checksum + id + seq);
+	return 0xFFFF - (0x8 + 0x0 + id + seq);
 }
 
 int resolve_destination(char *target, struct addrinfo **ai_ptr)
@@ -52,7 +70,7 @@ int resolve_destination(char *target, struct addrinfo **ai_ptr)
 	{
 		if (ptr->ai_family == AF_INET)
 		{
-			printf("%p\n", ptr);
+			printf("%p\n", ptr); // [DEBUG]
 			break;
 		}
 	}
@@ -81,8 +99,7 @@ int socket_setup()
 		perror("%s");
 		exit(1);
 	}
-	printf("%d\n", sockfd);
-	return (0);
+	return (sockfd);
 }
 
 int main(int argc, char **argv)
@@ -107,8 +124,10 @@ int main(int argc, char **argv)
 		printf("%s\n", buf);
 	}
 
-	socket_setup();
+	proto_v4.dst_sa = (struct sockaddr *)ai_ptr->ai_addr;
 
-	send_v4();
+	int sockfd = socket_setup();
+	send_v4(sockfd);
+
 	return (0);
 }
