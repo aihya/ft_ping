@@ -69,13 +69,14 @@ int gai_error(char *exe, char *dest, int error)
 int socket_setup()
 {
 	int sockfd;
+	int size = 256;
 
 	sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 	if (sockfd == -1)
 		return (sockfd);
 
 	// setsockopt could be used to set the timeout option or the socket buffer size.
-	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, 256, sizeof(int)) == -1)
+	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, size, sizeof(int)) == -1)
 	{
 		perror("%s");
 		exit(1);
