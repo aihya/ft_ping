@@ -68,6 +68,9 @@ void proc_v4(int sockfd)
 	msghdr.msg_iovlen = 1;
 
 	received = recvmsg(sockfd, &msghdr, 0);
+	printf("received: %d\n", received);
+	if (received == -1)
+		perror("recvmsg");
 	gettimeofday(&tvcurr, NULL);
 
 	ip = (struct ip *)(iov.iov_base);
@@ -77,7 +80,6 @@ void proc_v4(int sockfd)
 	icmp = (struct icmp *)(iov.iov_base + (ip->ip_hl << 2));
 	if (icmp->icmp_type == ICMP_ECHOREPLY)
 		printf("ICMP_ECHOREPLY %d\n", icmp->icmp_id);
-	printf("received: %d\n", received);
 
 	// Message shown on error
 	// printf("From %s (%s) icmp_seq=%d ");
