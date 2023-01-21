@@ -70,7 +70,6 @@ void proc_v4(int sockfd)
 	received = recvmsg(sockfd, &msghdr, 0);
 	if (received == -1)
 		perror("recvmsg");
-	gettimeofday(&tvcurr, NULL);
 
 	ip = (struct ip *)(iov.iov_base);
 	if (ip->ip_p == IPPROTO_ICMP)
@@ -95,7 +94,7 @@ void proc_v4(int sockfd)
 
 	tvrecv = *(struct timeval *)(icmp->icmp_data);
 
-	printf("[2]: %lld\n", tvrecv.tv_sec);
+	gettimeofday(&tvcurr, NULL);
 	time = (tvcurr.tv_sec - tvrecv.tv_sec) * 1000 + (tvcurr.tv_usec - tvrecv.tv_usec) / 1000;
 	printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d time=%f\n", 64, buf, buf, icmp->icmp_seq, ip->ip_ttl, time);
 }
