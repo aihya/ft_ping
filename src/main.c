@@ -63,7 +63,10 @@ void proc_v4(int sockfd)
 	ip = (struct ip *)(iov.iov_base);
 	if (ip->ip_p == IPPROTO_ICMP)
 		printf("IPPROTO_ICMP\n");
-	icmp = (struct icmp *)(iov.iov_base + sizeof(struct ip));
+
+	icmp = (struct icmp *)(iov.iov_base + ip->ip_hl);
+	if (icmp->icmp_type == ICMP_ECHOREPLY)
+		printf("ICMP_ECHOREPLY\n");
 	printf("received: %d\n", received);
 	printf("%d %d\n", icmp->icmp_type, icmp->icmp_code);
 }
