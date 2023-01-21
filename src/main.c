@@ -79,7 +79,7 @@ void proc_v4(int sockfd)
 		&((struct sockaddr_in *)proto_v4.dst_ai->ai_addr)->sin_addr, 
 		buf, 
 		256);
-	printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d\n", buf, buf, icmp->icmp_seq, ip->ip_ttl);
+	printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d\n", 64, buf, buf, icmp->icmp_seq, ip->ip_ttl);
 	printf("%d %d\n", icmp->icmp_type, icmp->icmp_code);
 }
 
