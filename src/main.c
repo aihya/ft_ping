@@ -1,7 +1,7 @@
 #include "ft_ping.h"
 
 // void init_v4(void);
-void proc_v4(void);
+void proc_v4(int sockfd);
 void send_v4(int sockfd);
 // int init_v6(void);
 // int proc_v6(void);
@@ -23,38 +23,40 @@ t_proto proto_v4 = {
 // 	IPPROTO_ICMPV6
 // };
 
-void proc_v4()
-{
-
-}
-
 void send_v4(int sockfd)
 {
 	char buff[64];
 	struct icmp icmp;
 
 	// Setup the ICMP packet header
-	icmp.icmp_type = ICMP_ECHO;
-	icmp.icmp_code = 0;
+	icmp.icmp_id    = 0xff & getpid();
+	icmp.icmp_type  = ICMP_ECHO;
 	icmp.icmp_cksum = 0x0000;
-	icmp.icmp_id = 0xff & getpid();
-	icmp.icmp_seq = 0;
+	icmp.icmp_code  = 0;
+	icmp.icmp_seq   = 0;
 	memset(icmp.icmp_data, 0xa5, 56);
-	// checksum = calculate_checksum();
-	// buff[0] = 0x08;	// type
-	// buff[1] = 0x00;	// code
-	// buff[2] = 0x00;	// checksum hh
-	// buff[3] = 0x00;	// checksum hh
-	// buff[4] = 0x13;	// id hh
-	// buff[5] = 0x37;	// id hh
-	// buff[6] = 0x00;	// seq
-	// buff[7] = 0x01;	// seq
 
-
-	printf("%d\n", sockfd);
+	// Send full packet
 	int ret = sendto(sockfd, &icmp, 64, 0, proto_v4.dst_sa, proto_v4.dst_ai->ai_addrlen);
 	if (ret == -1)
 		printf("sendto failed with error code: %d\n", ret);
+}
+
+void proc_v4(int sockfd)
+{
+	char buff[256];
+	ssize_t received;
+	struct iovec iov;
+	struct msghdr msghdr;
+
+	iov.iov_base = buff;
+	iov.iov_len = 64;
+
+	msghdr.msg_iov = &iov;
+	msghdr.msg_iovlen = 1;
+
+	received = recvmsg(sockfd, &msghdr, 0);
+	printf("received: %d\n", received);
 }
 
 int calculate_checksum(int id, int seq)
@@ -137,6 +139,7 @@ int main(int argc, char **argv)
 
 	int sockfd = socket_setup();
 	proto_v4.func_send(sockfd);
+	proto_v4.func_proc(sockfd);
 
 	return (0);
 }
