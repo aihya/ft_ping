@@ -45,7 +45,6 @@ int resolve_destination(char *target, struct addrinfo **ai_ptr)
 
 	hints.ai_family = AF_INET;
 	hints.ai_protocol = IPPROTO_TCP;
-	hints.ai_socktype = SOCK_DGRAM;
 	ret = getaddrinfo(target, "http", &hints, &result);
 	if (ret)
 		return (ret);
