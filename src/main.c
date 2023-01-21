@@ -68,7 +68,6 @@ void proc_v4(int sockfd)
 	msghdr.msg_iovlen = 1;
 
 	received = recvmsg(sockfd, &msghdr, 0);
-	printf("received: %d\n", received);
 	if (received == -1)
 		perror("recvmsg");
 	gettimeofday(&tvcurr, NULL);
