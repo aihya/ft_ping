@@ -54,7 +54,7 @@ void send_v4(int sockfd)
 
 
 
-	int ret = sendto(sockfd, buff, 64, 0, proto_v4.dst_sa, proto_v4.dst_sa->sin_len);
+	int ret = sendto(sockfd, buff, 64, 0, proto_v4.dst_sa, (struct sockaddr_in *)(proto_v4.dst_sa)->sa_len);
 	if (ret == -1)
 		printf("sendto failed with error code: %d\n", ret);
 }
@@ -134,7 +134,7 @@ int main(int argc, char **argv)
 		printf("%s\n", buf);
 	}
 
-	proto_v4.dst_sa = (struct sockaddr_in *)(ai_ptr->ai_addr);
+	proto_v4.dst_sa = ai_ptr->ai_addr;
 
 	int sockfd = socket_setup();
 	proto_v4.func_send(sockfd);
