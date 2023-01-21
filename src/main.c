@@ -48,6 +48,7 @@ void proc_v4(int sockfd)
 	ssize_t received;
 	struct iovec iov;
 	struct msghdr msghdr;
+	struct icmp *icmp;
 
 	iov.iov_base = buff;
 	iov.iov_len = 100;
@@ -56,7 +57,9 @@ void proc_v4(int sockfd)
 	msghdr.msg_iovlen = 1;
 
 	received = recvmsg(sockfd, &msghdr, 0);
+	icmp = (struct icmp *)(iov.iov_base);
 	printf("received: %d\n", received);
+	printf("%d %d\n", icmp->icmp_type, icmp->icmp_code);
 }
 
 int calculate_checksum(int id, int seq)
