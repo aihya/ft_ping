@@ -50,9 +50,11 @@ int resolve_destination(char *target, struct addrinfo **ai_ptr)
 		return (ret);
 	for (ptr = result; ptr != NULL; ptr = ptr->ai_next)
 	{
-		printf("%p\n", ptr);
 		if (ptr->ai_family == AF_INET)
+		{
+			printf("%p\n", ptr);
 			break;
+		}
 	}
 	*ai_ptr = ptr;
 	return (0);
