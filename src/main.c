@@ -31,11 +31,11 @@ void send_v4(int sockfd)
 
 	// Setup the ICMP packet header
 	icmp = (struct icmp *)buff;
-	icmp->icmp_id    = 41;
+	icmp->icmp_id    = 42;
 	icmp->icmp_type  = ICMP_ECHO;
 	icmp->icmp_cksum = 0x0000;
 	icmp->icmp_code  = 0;
-	icmp->icmp_seq   = 2;
+	icmp->icmp_seq   = 1;
 	memset(icmp->icmp_data, 0xa5, 56);
 
 	// // Setup data section
@@ -68,7 +68,7 @@ void proc_v4(int sockfd)
 	msghdr.msg_iovlen = 1;
 
 	printf("%d\n", sockfd);
-	received = recvmsg(sockfd, &msghdr, MSG_TRUNC|MSG_WAITALL);
+	received = recvmsg(sockfd, &msghdr, 0);
 	if (received == -1)
 		perror("recvmsg");
 	gettimeofday(&tvcurr, NULL);
