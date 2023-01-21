@@ -35,7 +35,7 @@ void send_v4(int sockfd)
 	icmp->icmp_type  = ICMP_ECHO;
 	icmp->icmp_cksum = 0x0000;
 	icmp->icmp_code  = 0;
-	icmp->icmp_seq   = 0;
+	icmp->icmp_seq   = 2;
 	memset(icmp->icmp_data, 0xa5, 56);
 
 	// Setup data section
