@@ -68,6 +68,18 @@ void proc_v4(int sockfd)
 	if (icmp->icmp_type == ICMP_ECHOREPLY)
 		printf("ICMP_ECHOREPLY %d\n", icmp->icmp_id);
 	printf("received: %d\n", received);
+
+	// Message shown on error
+	printf("From %s (%s) icmp_seq=%d ");
+
+	// Message shown on success
+	char buf[256];
+	inet_ntop(
+		proto_v4.dst_ai->ai_family, 
+		&((struct sockaddr_in *)proto_v4.dst_ai->ai_addr)->sin_addr, 
+		buf, 
+		256);
+	printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d\n", buf, buf, icmp->icmp_seq, ip->ip_ttl);
 	printf("%d %d\n", icmp->icmp_type, icmp->icmp_code);
 }
 
