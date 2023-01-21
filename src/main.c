@@ -93,7 +93,11 @@ void proc_v4(int sockfd)
 		256
 	);
 
-	struct hostent *ent = gethostbyname(buf);
+	struct hostent *ent = gethostbyaddr(
+		proto_v4.dst_ai->ai_addr, 
+		proto_v4.dst_ai->ai_addrlen, 
+		proto_v4.dst_ai->ai_protocol
+	);
 
 	tvrecv = *(struct timeval *)(icmp->icmp_data);
 	time = (tvcurr.tv_sec - tvrecv.tv_sec) * 1000 + (tvcurr.tv_usec - tvrecv.tv_usec) / 1000;
