@@ -84,7 +84,8 @@ int main(int argc, char **argv)
 	if (ai_ptr)
 	{
 		char buf[256];
-		printf("%s\n", inet_ntop(ai_ptr->ai_family, ai_ptr, buf, 256));
+		inet_ntop(ai_ptr->ai_family, ai_ptr, buf, 256);
+		printf("%s\n", buf);
 	}
 	send_v4();
 	return (0);
