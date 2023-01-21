@@ -70,7 +70,7 @@ void proc_v4(int sockfd)
 	printf("received: %d\n", received);
 
 	// Message shown on error
-	printf("From %s (%s) icmp_seq=%d ");
+	// printf("From %s (%s) icmp_seq=%d ");
 
 	// Message shown on success
 	char buf[256];
