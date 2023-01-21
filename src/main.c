@@ -67,6 +67,7 @@ void proc_v4(int sockfd)
 	msghdr.msg_iov = &iov;
 	msghdr.msg_iovlen = 1;
 
+	printf("%d\n", sockfd);
 	received = recvmsg(sockfd, &msghdr, 0);
 	if (received == -1)
 		perror("recvmsg");
