@@ -44,7 +44,7 @@ void send_v4(int sockfd)
 	buff[6] = 0x00;	// seq
 	buff[7] = 0x01;	// seq
 
-	int ret = sendto(sockfd, buff, sizeof(buff), 0, proto_v4.dst_sa, sizeof(proto_v4.dst_sa));
+	int ret = sendto(sockfd, buff, 64, 0, proto_v4.dst_sa, sizeof(proto_v4.dst_sa));
 	if (ret == -1)
 		printf("sendto failed with error code: %d\n", ret);
 }
