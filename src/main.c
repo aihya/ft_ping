@@ -29,7 +29,7 @@ void send_v4(int sockfd)
 	struct icmp icmp;
 
 	// Setup the ICMP packet header
-	icmp.icmp_id    = 0xff & getpid();
+	icmp.icmp_id    = 42;
 	icmp.icmp_type  = ICMP_ECHO;
 	icmp.icmp_cksum = 0x0000;
 	icmp.icmp_code  = 0;
@@ -66,7 +66,7 @@ void proc_v4(int sockfd)
 
 	icmp = (struct icmp *)(iov.iov_base + (ip->ip_hl << 2));
 	if (icmp->icmp_type == ICMP_ECHOREPLY)
-		printf("ICMP_ECHOREPLY\n");
+		printf("ICMP_ECHOREPLY %d\n", icmp->icmp_id);
 	printf("received: %d\n", received);
 	printf("%d %d\n", icmp->icmp_type, icmp->icmp_code);
 }
