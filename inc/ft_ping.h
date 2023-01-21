@@ -18,8 +18,8 @@ typedef struct s_proto
     void (*func_init) (void);
     void (*func_proc) (void);
     void (*func_send) (int);
-    struct sockaddr *src_sa;
     struct sockaddr *dst_sa;
+    struct addrinfo *dst_ai;
     int ipproto_type;
 }   t_proto;
 
