@@ -17,9 +17,9 @@ typedef struct s_proto
 {
     void (*func_init) (void);
     void (*func_proc) (void);
-    void (*func_send) (void);
-    // struct sockaddr *src_sa;
-    // struct sockaddr *dst_sa;
+    void (*func_send) (int);
+    struct sockaddr *src_sa;
+    struct sockaddr *dst_sa;
     int ipproto_type;
 }   t_proto;
 
@@ -37,6 +37,6 @@ typedef struct s_icmp
 
 t_icmp g_icmp = {0};
 
-int calculate_checksum(int type, int checksum, int id, int seq);
+int calculate_checksum(int id, int seq);
 
 #endif
