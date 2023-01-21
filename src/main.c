@@ -37,7 +37,7 @@ int resolve_destination(char *target)
 	hints.ai_protocol = IPPROTO_TCP;
 	ret = getaddrinfo(target, "http", &hints, &result);
 	if (ret)
-		return (1);
+		return (ret);
 	return (0);
 }
 
