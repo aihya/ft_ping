@@ -66,6 +66,23 @@ int gai_error(char *exe, char *dest, int error)
 	return (1);
 }
 
+int socket_setup()
+{
+	int sockfd;
+
+	sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+	if (sockfd == -1)
+		return (sockfd);
+
+	// setsockopt could be used to set the timeout option or the socket buffer size.
+	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, 256, sizeof(int)) == -1)
+	{
+		perror("%s");
+		exit(1);
+	}
+	return (0);
+}
+
 int main(int argc, char **argv)
 {
 	int error;
@@ -87,6 +104,9 @@ int main(int argc, char **argv)
 		inet_ntop(ai_ptr->ai_family, &((struct sockaddr_in *)ai_ptr->ai_addr)->sin_addr, buf, 256);
 		printf("%s\n", buf);
 	}
+
+	socket_setup();
+
 	send_v4();
 	return (0);
 }
