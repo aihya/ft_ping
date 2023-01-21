@@ -13,6 +13,7 @@
 # include <strings.h> // TODO: remove this line and bzero function in main
 # include <netinet/ip_icmp.h>
 # include <netinet/ip.h>
+# include <sys/time.h>
 
 typedef struct s_proto
 {
