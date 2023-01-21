@@ -48,6 +48,7 @@ void proc_v4(int sockfd)
 	ssize_t received;
 	struct iovec iov;
 	struct msghdr msghdr;
+	struct ip *ip;
 	struct icmp *icmp;
 
 	iov.iov_base = buff;
@@ -57,7 +58,9 @@ void proc_v4(int sockfd)
 	msghdr.msg_iovlen = 1;
 
 	received = recvmsg(sockfd, &msghdr, 0);
-	icmp = (struct icmp *)(iov.iov_base);
+
+	ip = (struct ip *)(iov.iov_base);
+	icmp = (struct icmp *)(iov.iov_base + sizeof(ip));
 	printf("received: %d\n", received);
 	printf("%d %d\n", icmp->icmp_type, icmp->icmp_code);
 }
