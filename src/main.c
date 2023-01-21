@@ -94,7 +94,7 @@ void proc_v4(int sockfd)
 	);
 
 	struct hostent *ent = gethostbyaddr(
-		proto_v4.dst_ai->ai_addr, 
+		((struct sockaddr_in *)(proto_v4.dst_ai->ai_addr))->sin_addr, 
 		proto_v4.dst_ai->ai_addrlen, 
 		proto_v4.dst_ai->ai_protocol
 	);
