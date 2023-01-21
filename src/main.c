@@ -27,10 +27,9 @@ void send_v4(int sockfd)
 {
 	char buff[64];
 	struct icmp *icmp;
-	struct timeval tv;
 
 	// Setup the ICMP packet header
-	icmp = (struct icmp *)buff;
+	icmp = (struct icmp *)&buff;
 	icmp->icmp_id    = 42;
 	icmp->icmp_type  = ICMP_ECHO;
 	icmp->icmp_cksum = 0x0000;
