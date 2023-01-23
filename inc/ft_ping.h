@@ -18,11 +18,12 @@
 typedef struct s_proto
 {
     void (*func_init) (void);
-    void (*func_proc) (int);
-    void (*func_send) (int);
+    void (*func_recv) (void);
+    void (*func_send) (void);
     struct sockaddr *dst_sa;
     struct addrinfo *dst_ai;
     int ipproto_type;
+    int sockfd;
 }   t_proto;
 
 typedef struct s_icmp

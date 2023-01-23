@@ -1,19 +1,21 @@
 #include "ft_ping.h"
+#include <stdbool.h>
 
 // void init_v4(void);
-void proc_v4(int sockfd);
-void send_v4(int sockfd);
+void recv_v4();
+void send_v4();
 // int init_v6(void);
 // int proc_v6(void);
 // int send_v6(void);
 
 t_proto proto_v4 = {
 	NULL,
-	proc_v4,
+	recv_v4,
 	send_v4,
 	NULL,
 	NULL,
-	IPPROTO_ICMP
+	IPPROTO_ICMP,
+	-1
 };
 
 // t_proto proto_v6 = {
@@ -23,32 +25,56 @@ t_proto proto_v4 = {
 // 	IPPROTO_ICMPV6
 // };
 
-void send_v4(int sockfd)
+int ft_strlen(const char * str)
+{
+	int size;
+
+	size = 0;
+	while (*str && ++str && ++size)
+		;
+	return size;
+}
+
+char *reverse_dns_lookup()
+{
+	int ret;
+	char buff[256];
+	char *name;
+
+	ret = getnameinfo(proto_v4.dst_sa, proto_v4.dst_ai->ai_addrlen, buff, sizeof(buff), NULL, 0, 0);
+	printf("-> %d\n", ft_strlen(buff));
+	name = malloc(ft_strlen(buff) + 1);
+	strncpy(name, buff, ft_strlen(buff));
+	return (name);
+}
+
+void send_v4()
 {
 	char buff[64];
 	struct icmp *icmp;
 
 	// Setup the ICMP packet header
 	icmp = (struct icmp *)buff;
-	icmp->icmp_id    = 42;
+	icmp->icmp_id    = getpid();
+	printf("pid: %d\n", icmp->icmp_id);
 	icmp->icmp_type  = ICMP_ECHO;
-	icmp->icmp_cksum = 0x0000;
 	icmp->icmp_code  = 0;
 	icmp->icmp_seq   = 1;
-	memset(icmp->icmp_data, 0xa5, 56);
+	memset(icmp->icmp_data, 0x00, 56);
 
-	// // Setup data section
+	// Setup data section
 	gettimeofday((struct timeval *)(icmp->icmp_data), NULL);
 
 	// Send full packet
-	int ret = sendto(sockfd, buff, sizeof(buff), 0, proto_v4.dst_sa, proto_v4.dst_ai->ai_addrlen);
+	int ret = sendto(proto_v4.sockfd, buff, sizeof(buff), 0, proto_v4.dst_sa, sizeof(struct sockaddr));
 	if (ret == -1)
 		printf("sendto failed with error code: %d\n", ret);
 }
 
-void proc_v4(int sockfd)
+void recv_v4()
 {
 	char buff[256];
+	char controlbuff[256];
 	ssize_t received;
 	struct iovec iov;
 	struct msghdr msghdr;
@@ -58,25 +84,29 @@ void proc_v4(int sockfd)
 	struct timeval tvrecv;
 	double time;
 
-	memset(buff, 0xa5, 64);
+	memset(buff, 0x00, 256);
 
 	iov.iov_base = buff;
-	iov.iov_len = 64;
+	iov.iov_len = sizeof(buff);
+
 
 	msghdr.msg_iov = &iov;
 	msghdr.msg_iovlen = 1;
 
-	received = recvmsg(sockfd, &msghdr, 0);
+	msghdr.msg_control = controlbuff;
+	msghdr.msg_controllen = sizeof(controlbuff);
+
+	received = recvmsg(proto_v4.sockfd, &msghdr, 0);
 	if (received == -1)
 		perror("recvmsg");
 
 	ip = (struct ip *)(iov.iov_base);
-	if (ip->ip_p == IPPROTO_ICMP)
-		printf("IPPROTO_ICMP\n");
+//	if (ip->ip_p == IPPROTO_ICMP)
+//		printf("IPPROTO_ICMP\n");
 
 	icmp = (struct icmp *)(iov.iov_base + (ip->ip_hl << 2));
-	if (icmp->icmp_type == ICMP_ECHOREPLY)
-		printf("ICMP_ECHOREPLY %d\n", icmp->icmp_id);
+//	if (icmp->icmp_type == ICMP_ECHOREPLY)
+//		printf("ICMP_ECHOREPLY %d\n", icmp->icmp_id);
 
 	// Message shown on error
 	// printf("From %s (%s) icmp_seq=%d ");
@@ -96,13 +126,13 @@ void proc_v4(int sockfd)
 	gettimeofday(&tvcurr, NULL);
 	time  = (tvcurr.tv_sec  - tvrecv.tv_sec)  * 1000;
 	time += (tvcurr.tv_usec - tvrecv.tv_usec) / 1000.0;
-	printf("%ld %ld\n", (tvcurr.tv_usec - tvrecv.tv_usec), (tvcurr.tv_usec - tvrecv.tv_usec) % 1000);
-	printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d time=%.2lf ms\n", 64, buf, buf, icmp->icmp_seq, ip->ip_ttl, time);
+//	printf("%ld %ld\n", (tvcurr.tv_usec - tvrecv.tv_usec), (tvcurr.tv_usec - tvrecv.tv_usec) % 1000);
+	printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d time=%.2lf ms\n", 64, reverse_dns_lookup(), buf, icmp->icmp_seq, ip->ip_ttl, time);
 }
 
 int calculate_checksum(int id, int seq)
 {
-	return 0xFFFF - (0x8 + 0x0 + id + seq);
+	return 0xFFFF - (0x8 + 0x0 + id + seq); // [DEBUG]: Change this
 }
 
 int resolve_destination(char *target, struct addrinfo **ai_ptr)
@@ -145,14 +175,9 @@ int socket_setup()
 		return (sockfd);
 
 	// setsockopt could be used to set the timeout option or the socket buffer size.
-	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(int)) < 0)
-	{
-		perror("%s");
-		exit(1);
-	}
 
 	struct timeval trcv;
-	trcv.tv_sec = 1;
+	trcv.tv_sec = 10;
 	trcv.tv_usec = 0;
 	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (struct timeval *)&trcv, sizeof(struct timeval)) < 0)
 	{
@@ -160,6 +185,24 @@ int socket_setup()
 		exit(1);
 	}
 	return (sockfd);
+}
+
+void sig_handler(int sig)
+{
+	printf("Signal received\n");
+	proto_v4.func_send();
+}
+
+void loop()
+{
+	// Trigger signal to send the first request
+	alarm(1);
+
+	while (true)
+	{
+		proto_v4.func_recv();
+		alarm(1);
+	}
 }
 
 int main(int argc, char **argv)
@@ -184,12 +227,16 @@ int main(int argc, char **argv)
 		printf("%s\n", buf);
 	}
 
+	// Setup alarm
+	signal(SIGALRM, sig_handler);
+
 	proto_v4.dst_ai = ai_ptr;
 	proto_v4.dst_sa = proto_v4.dst_ai->ai_addr;
 
 	int sockfd = socket_setup();
-	proto_v4.func_send(sockfd);
-	proto_v4.func_proc(sockfd);
+	proto_v4.sockfd = sockfd;
+
+	loop();
 
 	return (0);
 }
