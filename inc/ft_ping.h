@@ -20,6 +20,8 @@ typedef struct s_proto
     void (*func_init) (void);
     void (*func_recv) (void);
     void (*func_send) (void);
+    struct sockaddr *src_sa;
+    struct addrinfo *src_ai;
     struct sockaddr *dst_sa;
     struct addrinfo *dst_ai;
     int ipproto_type;
@@ -40,6 +42,6 @@ typedef struct s_icmp
 
 t_icmp g_icmp = {0};
 
-int calculate_checksum(int id, int seq);
+uint16_t calculate_checksum(uint16_t *buff, ssize_t size);
 
 #endif
