@@ -1,7 +1,8 @@
 #include "ft_ping.h"
 #include <stdbool.h>
 
-#define IP4_HDRLEN 20
+#define IP4_HDRLEN sizeof(struct ip)
+#define ICMP_HDRLEN sizeof(struct icmp)
 
 int g_sent = 0;
 
@@ -40,6 +41,21 @@ int ft_strlen(const char * str)
 	return size;
 }
 
+void *ft_memset(void *s, int c, size_t n)
+{
+	unsigned char *buff;
+	size_t i;
+
+	buff = (unsigned char *)s;
+	i = 0;
+	while (i < n)
+	{
+		buff[i] = (unsigned char)c;
+		i++;
+	}
+	return s;
+}
+
 char *reverse_dns_lookup()
 {
 	int ret;
@@ -55,30 +71,49 @@ char *reverse_dns_lookup()
 
 void send_v4()
 {
-	char buff[64];
+	char packet[IP4_HDRLEN + ICMP_HDRLEN + 56];
 	struct icmp *icmp;
+	struct ip *ip;
 	static int seq = 1;
 
-	// Setup the ICMP packet header
-	icmp = (struct icmp *)(buff);
+	ft_memset(packet, 0x00, sizeof(packet));
+
+	// Setup the ICMP structure
+	icmp = (struct icmp *)(packet + IP4_HDRLEN);
 	icmp->icmp_id    = getpid();
 	icmp->icmp_type  = ICMP_ECHO;
 	icmp->icmp_code  = 0;
 	icmp->icmp_seq   = seq++;
-	memset(icmp->icmp_data, 0x00, 56);
 
 	// Setup data section
 	gettimeofday((struct timeval *)(icmp->icmp_data), NULL);
+	icmp->icmp_cksum = calculate_checksum((uint16_t *)(packet + IP4_HDRLEN), ICMP_HDRLEN + 56);
 
-	icmp->icmp_cksum = calculate_checksum((uint16_t *)(buff), 64);
+	// Setup the IP structure
+	ip = (struct ip *)(packet);
+	ip->ip_v = 4;
+	ip->ip_hl = sizeof(struct ip) >> 2;
+	ip->ip_id = getpid();
+	ip->ip_tos = 0;
+	ip->ip_len = IP4_HDRLEN + ICMP_HDRLEN + 56;
+	ip->ip_p = IPPROTO_TCP;
+	ip->ip_ttl = 255;
+	ip->ip_src.s_addr = proto_v4.src_in_addr->s_addr;
+	ip->ip_dst.s_addr = ((struct sockaddr_in *)(proto_v4.dst_sa))->sin_addr.s_addr;
+	ip->ip_sum = 0;
+	ip->ip_sum = calculate_checksum((uint16_t *)packet, IP4_HDRLEN);
+
 	// Send full packet
-	int ret = sendto(proto_v4.sockfd, buff, sizeof(buff), 0, proto_v4.dst_sa, proto_v4.dst_ai->ai_addrlen);
-	if (ret == -1)
+	int ret = sendto(proto_v4.sockfd, packet, IP4_HDRLEN+ICMP_HDRLEN + 56, 0, proto_v4.dst_sa, proto_v4.dst_ai->ai_addrlen);
+	if (ret < 0)
 		printf("sendto failed with error code: %d\n", ret);
+	else
+		printf("send successfully %d\n", AF_INET);
 }
 
 void recv_v4()
 {
+	char buf[256];
 	char buff[256];
 	char controlbuff[256];
 	ssize_t received;
@@ -95,12 +130,14 @@ void recv_v4()
 	iov.iov_base = buff;
 	iov.iov_len = sizeof(buff);
 
-
 	msghdr.msg_iov = &iov;
 	msghdr.msg_iovlen = 1;
 
 	msghdr.msg_name = proto_v4.dst_sa;
 	msghdr.msg_namelen = proto_v4.dst_ai->ai_addrlen;
+
+	msghdr.msg_control = controlbuff;
+	msghdr.msg_controllen = sizeof(controlbuff);
 
 	received = recvmsg(proto_v4.sockfd, &msghdr, 0);
 	if (received == -1)
@@ -110,7 +147,6 @@ void recv_v4()
 	icmp = (struct icmp *)(iov.iov_base + (ip->ip_hl << 2));
 
 	// Message shown on success
-	char buf[256];
 	inet_ntop(
 		proto_v4.dst_ai->ai_family,
 		&((struct sockaddr_in *)proto_v4.dst_sa)->sin_addr,
@@ -123,6 +159,7 @@ void recv_v4()
 	gettimeofday(&tvcurr, NULL);
 	time  = (tvcurr.tv_sec  - tvrecv.tv_sec)  * 1000;
 	time += (tvcurr.tv_usec - tvrecv.tv_usec) / 1000.0;
+	printf("This is buff: %s\n", buf);
 	printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d time=%.1lf ms\n", 64, reverse_dns_lookup(), buf, icmp->icmp_seq, ip->ip_ttl, time);
 	g_sent = 0;
 }
@@ -180,7 +217,7 @@ int socket_setup()
 	int sockfd;
 	int size = 256;
 
-	sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+	sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
 	if (sockfd == -1)
 		return (sockfd);
 
@@ -224,6 +261,8 @@ int main(int argc, char **argv)
 {
 	int error;
 	struct addrinfo *ai;
+	struct addrinfo src_ai;
+	struct in_addr src_in_addr;
 
 	if (argc == 1)
 	{
@@ -240,7 +279,7 @@ int main(int argc, char **argv)
 		char buf[256];
 		memset(buf, 0, 256);
 		inet_ntop(ai->ai_family, &((struct sockaddr_in *)ai->ai_addr)->sin_addr, buf, 256);
-		printf("PING %s (%s) 56(84) data bytes.\n", ai->ai_canonname ? ai->ai_canonname : buf, buf);
+		printf("PING %s (%s) 56(84) data bytes.\n", argv[1], buf);
 	}
 
 	// Setup alarm
@@ -249,6 +288,8 @@ int main(int argc, char **argv)
 
 	proto_v4.dst_ai = ai;
 	proto_v4.dst_sa = proto_v4.dst_ai->ai_addr;
+	inet_pton(AF_INET, argv[1], &src_in_addr);
+	proto_v4.src_in_addr = &src_in_addr;
 
 
 	int sockfd = socket_setup();

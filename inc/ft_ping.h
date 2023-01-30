@@ -20,7 +20,7 @@ typedef struct s_proto
     void (*func_init) (void);
     void (*func_recv) (void);
     void (*func_send) (void);
-    struct sockaddr *src_sa;
+    struct in_addr *src_in_addr;
     struct addrinfo *src_ai;
     struct sockaddr *dst_sa;
     struct addrinfo *dst_ai;
