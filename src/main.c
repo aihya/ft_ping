@@ -78,6 +78,21 @@ void send_v4()
 
 	ft_memset(packet, 0x00, sizeof(packet));
 
+	// Setup the IP structure
+	ip = (struct ip *)(packet);
+	ip->ip_v = 4;
+	ip->ip_hl = sizeof(struct ip) >> 2;
+    ip->ip_tos = 0;
+	ip->ip_id = getpid();
+	ip->ip_len = IP4_HDRLEN + ICMP_HDRLEN + 56;
+	ip->ip_p = IPPROTO_TCP;
+    ip->ip_off = 0;
+	ip->ip_ttl = 255;
+	ip->ip_src.s_addr = proto_v4.src_in_addr->s_addr;
+	ip->ip_dst.s_addr = ((struct sockaddr_in *)(proto_v4.dst_sa))->sin_addr.s_addr;
+	ip->ip_sum = 0;
+	ip->ip_sum = calculate_checksum((uint16_t *)packet, IP4_HDRLEN);
+
 	// Setup the ICMP structure
 	icmp = (struct icmp *)(packet + IP4_HDRLEN);
 	icmp->icmp_id    = getpid();
@@ -87,28 +102,16 @@ void send_v4()
 
 	// Setup data section
 	gettimeofday((struct timeval *)(icmp->icmp_data), NULL);
+	icmp->icmp_cksum = 0;
 	icmp->icmp_cksum = calculate_checksum((uint16_t *)(packet + IP4_HDRLEN), ICMP_HDRLEN + 56);
 
-	// Setup the IP structure
-	ip = (struct ip *)(packet);
-	ip->ip_v = 4;
-	ip->ip_hl = sizeof(struct ip) >> 2;
-	ip->ip_id = getpid();
-	ip->ip_tos = 0;
-	ip->ip_len = IP4_HDRLEN + ICMP_HDRLEN + 56;
-	ip->ip_p = IPPROTO_TCP;
-	ip->ip_ttl = 255;
-	ip->ip_src.s_addr = proto_v4.src_in_addr->s_addr;
-	ip->ip_dst.s_addr = ((struct sockaddr_in *)(proto_v4.dst_sa))->sin_addr.s_addr;
-	ip->ip_sum = 0;
-	ip->ip_sum = calculate_checksum((uint16_t *)packet, IP4_HDRLEN);
-
 	// Send full packet
-	int ret = sendto(proto_v4.sockfd, packet, IP4_HDRLEN+ICMP_HDRLEN + 56, 0, proto_v4.dst_sa, proto_v4.dst_ai->ai_addrlen);
+	int ret = sendto(proto_v4.sockfd, packet, IP4_HDRLEN + ICMP_HDRLEN + 56, 0, proto_v4.dst_sa, proto_v4.dst_ai->ai_addrlen);
+    g_sent = 1;
 	if (ret < 0)
 		printf("sendto failed with error code: %d\n", ret);
 	else
-		printf("send successfully %d\n", AF_INET);
+		printf("send successfully\n");
 }
 
 void recv_v4()
@@ -140,6 +143,7 @@ void recv_v4()
 	msghdr.msg_controllen = sizeof(controlbuff);
 
 	received = recvmsg(proto_v4.sockfd, &msghdr, 0);
+    g_sent = 0;
 	if (received == -1)
 		perror("recvmsg");
 
@@ -161,7 +165,6 @@ void recv_v4()
 	time += (tvcurr.tv_usec - tvrecv.tv_usec) / 1000.0;
 	printf("This is buff: %s\n", buf);
 	printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d time=%.1lf ms\n", 64, reverse_dns_lookup(), buf, icmp->icmp_seq, ip->ip_ttl, time);
-	g_sent = 0;
 }
 
 uint16_t calculate_checksum(uint16_t *buff, ssize_t size)
@@ -217,14 +220,14 @@ int socket_setup()
 	int sockfd;
 	int size = 256;
 
-	sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+	sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 	if (sockfd == -1)
 		return (sockfd);
 
 	// setsockopt could be used to set the timeout option or the socket buffer size.
 
 	struct timeval trcv;
-	trcv.tv_sec = 10;
+	trcv.tv_sec = 5;
 	trcv.tv_usec = 0;
 	if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (struct timeval *)&trcv, sizeof(struct timeval)) < 0)
 	{
@@ -237,23 +240,21 @@ int socket_setup()
 void sig_handler(int sig)
 {
 	proto_v4.func_send();
-	g_sent = 1;
-	alarm(1);
 }
 
 void loop()
 {
-	// Trigger signal to send the first request
 	proto_v4.func_send();
-	g_sent = 1;
-
 	while (true)
 	{
 		if (g_sent)
 		{
+			printf("g_sent: %d\n", g_sent);
 			proto_v4.func_recv();
-			alarm(1);
+            alarm(1);
+			printf("g_sent: %d\n", g_sent);
 		}
+		usleep(10);
 	}
 }
 
@@ -285,12 +286,10 @@ int main(int argc, char **argv)
 	// Setup alarm
 	signal(SIGALRM, sig_handler);
 
-
 	proto_v4.dst_ai = ai;
 	proto_v4.dst_sa = proto_v4.dst_ai->ai_addr;
-	inet_pton(AF_INET, argv[1], &src_in_addr);
+	inet_pton(AF_INET, "localhost", &src_in_addr);
 	proto_v4.src_in_addr = &src_in_addr;
-
 
 	int sockfd = socket_setup();
 	proto_v4.sockfd = sockfd;
