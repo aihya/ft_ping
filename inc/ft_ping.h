@@ -14,6 +14,7 @@
 # include <netinet/ip_icmp.h>
 # include <netinet/ip.h>
 # include <sys/time.h>
+# include <stdbool.h>
 
 #define IPV4_HDRLEN (sizeof(struct ip))
 #define ICMP_HDRLEN (sizeof(struct icmp) - IPV4_HDRLEN)
@@ -23,6 +24,8 @@ enum e_function
 {
     GETADDRINFO = 255,
     GETNAMEINFO,
+    SENDTO,
+    RECVMSG,
     CALLOC,
     MALLOC
 };
@@ -59,6 +62,12 @@ typedef struct s_data
 
     // Packet sent or not
     int sent;
+
+    // The time the packet is sent
+    struct timeval send_time;
+
+    // Current checksum value
+    uint16_t checksum;
 
     // Hostname from dns lookup
     char hostname[4029];
