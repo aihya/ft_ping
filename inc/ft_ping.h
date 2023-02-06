@@ -15,33 +15,51 @@
 # include <netinet/ip.h>
 # include <sys/time.h>
 
-typedef struct s_proto
+#define IPV4_HDRLEN (sizeof(struct ip))
+#define ICMP_HDRLEN (sizeof(struct icmp) - IPV4_HDRLEN)
+
+// Reference of functions used
+enum e_function
 {
-    void (*func_init) (void);
-    void (*func_recv) (void);
-    void (*func_send) (void);
-    struct in_addr *src_in_addr;
-    struct addrinfo *src_ai;
-    struct sockaddr *dst_sa;
-    struct addrinfo *dst_ai;
-    int ipproto_type;
-    int sockfd;
-}   t_proto;
+    GETADDRINFO = 255,
+    GETNAMEINFO,
+    CALLOC,
+    MALLOC
+};
 
-typedef struct s_icmp
+enum e_error_type
 {
-    struct addrinfo hints;
-    struct addrinfo *src_ai;
-    struct addrinfo *dst_ai;
-    struct sockaddr *src_sa;
-    struct sockaddr *dst_sa;
-    struct icmp icmp_send;
-    struct icmp *icmp_recv;
-    int sockfd;
-}   t_icmp;
+    GENERAL = 1,
+    INTERNAL,
+    FUNCTION
+};
 
-t_icmp g_icmp = {0};
+// Error codes
+enum e_error
+{
+    BAD_ALLOCATION
+};
 
-uint16_t calculate_checksum(uint16_t *buff, ssize_t size);
+typedef struct s_dest
+{
+    struct sockaddr *sa;
+    struct addrinfo *ai;
+}   t_dest;
+
+typedef struct s_data
+{
+    int     sock_fd;
+    t_dest  dest;
+
+    // Hostname from dns lookup
+    char hostname[4029];
+
+    // Error management.
+    enum e_error_type   type;
+    enum e_error        error;
+    enum e_function     function;
+}   t_data;
+
+t_data g_data;
 
 #endif

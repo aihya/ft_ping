@@ -4,7 +4,7 @@ NAME = ft_ping
 SRC_DIR = ./src
 OBJ_DIR = ./obj
 
-SRC_FILES = main.c
+SRC_FILES = main_2.c
 OBJ_FILES = $(SRC_FILES:.c=.o)
 
 SRC = $(addprefix $(SRC_DIR)/,$(SRC_FILES))
