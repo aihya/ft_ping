@@ -158,7 +158,7 @@ void set_error_codes(enum e_function function, enum e_error_type type, enum e_er
 }
 
 
-int dns_lookup()
+int get_hostname()
 {
     int ret;
 
@@ -249,7 +249,7 @@ int main(int argc, char **argv)
 
     g_data.dest.sa = g_data.dest.ai->ai_addr;
 
-    if (!dns_lookup())
+    if (!get_hostname())
     {
         // TODO: Print error message here.
         return -1;
