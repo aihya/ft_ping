@@ -46,10 +46,19 @@ typedef struct s_dest
     struct addrinfo *ai;
 }   t_dest;
 
+typedef struct s_time
+{
+    struct timeval tv;
+    struct s_time *next;
+}   t_time;
+
 typedef struct s_data
 {
     int     sock_fd;
     t_dest  dest;
+
+    // Packet sent or not
+    int sent;
 
     // Hostname from dns lookup
     char hostname[4029];

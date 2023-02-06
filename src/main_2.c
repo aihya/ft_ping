@@ -127,6 +127,34 @@ struct addrinfo *resolve_target(char *target)
     return result;
 }
 
+void signal_handler(int sig)
+{
+    if (sig == SIGALRM)
+    {
+        send_icmp_packet();
+        alarm(1);
+        return;
+    }
+    if (sig == SIGINT || sig == SIGKILL)
+    {
+        printf("Signal: SIGINT");
+        g_data.sent = 0;
+        print_statictics();
+        exit(0);
+    }
+}
+
+void loop()
+{
+    g_data.sent = 0;
+    signal_handler(SIGALRM);
+    while (true)
+    {
+        if (g_data.sent)
+            receive_icmp_packet();
+    }
+}
+
 int main(int argc, char **argv)
 {
     g_data.dest.ai = resolve_target(argv[1]);
@@ -146,3 +174,4 @@ int main(int argc, char **argv)
 
     return (0);
 }
+
