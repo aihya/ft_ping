@@ -22,9 +22,9 @@ int	send_icmp_packet(void)
 	socklen_t		addrlen;
 	int				bytes_sent;
 
-	gettimeofday(&(g_data.s_time), 0);
 	destaddr = g_data.dest.sa;
 	addrlen = g_data.dest.ai->ai_addrlen;
+	gettimeofday(&(g_data.s_time), 0);
 	bytes_sent = sendto(
 			g_data.sock_fd,
 			g_data.s_packet,
