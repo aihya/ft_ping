@@ -31,25 +31,3 @@ void	print_response(int bytes_read, struct ip *ip, struct icmp *icmp)
 			get_time_diff());
 	}
 }
-
-static void	set_destination_unreachable(int code)
-{
-}
-
-static void	set_time_exceeded(int code)
-{
-}
-
-// TODO: manage option -v in else
-static void	set_packet_error_message(int type, int code)
-{
-	if (type == 3)
-		set_destination_unreachable(code);
-	else if (type == 11)
-		set_time_exceeded(code);
-	else
-	{
-		if (g_data.options & OPT_v)
-			print_verbose();
-	}
-}
