@@ -15,6 +15,7 @@
 # include <netinet/ip.h>
 # include <sys/time.h>
 # include <stdbool.h>
+# include <limits.h>
 
 #define IPV4_HDRLEN (sizeof(struct ip))
 #define ICMP_HDRLEN (sizeof(struct icmp) - IPV4_HDRLEN)
@@ -43,17 +44,17 @@ enum e_error
     BAD_ALLOCATION
 };
 
-typedef struct s_dest
-{
-    struct sockaddr *sa;
-    struct addrinfo *ai;
-}   t_dest;
-
 typedef struct s_time
 {
     struct timeval tv;
     struct s_time *next;
 }   t_time;
+
+typedef struct s_dest
+{
+    struct sockaddr *sa;
+    struct addrinfo *ai;
+}   t_dest;
 
 typedef struct s_data
 {

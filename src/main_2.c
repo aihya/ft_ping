@@ -78,7 +78,7 @@ int send_icmp_packet()
     static int sequence = 0;
     char packet[ICMP_HDRLEN + 56];
     struct icmp *icmp;
-    struct sockaddr dest_addr;
+    struct sockaddr *destaddr;
     socklen_t addrlen;
     int ret;
 
@@ -90,19 +90,19 @@ int send_icmp_packet()
     icmp->icmp_type  = ICMP_ECHO;
     icmp->icmp_code  = 0;
     icmp->icmp_seq   = ++sequence;
-    icmp->icmp_id    = getpid() >> 2;
+    icmp->icmp_id    = getpid();
     icmp->icmp_cksum = 0;
 
     // Calculate the ICMP checksum
-    icmp->icmp_cksum = calculate_checksum(packet, sizeof(packet));
+    icmp->icmp_cksum = calculate_checksum((uint16_t *)packet, sizeof(packet));
 
     // Store the current time befire the packet is sent
-    gettimeofday(g_data.send_time, 0);
+    gettimeofday(&(g_data.send_time), 0);
 
     // Send the packet
     destaddr = g_data.dest.sa;
-    addrlen  = g_data.dest.ai.ai_addrlen;
-    ret = sendto(g_data.sockfd, packet, sizeof(packet), 0, destaddr, addrlen);
+    addrlen  = g_data.dest.ai->ai_addrlen;
+    ret = sendto(g_data.sock_fd, packet, sizeof(packet), 0, destaddr, addrlen);
     if (ret < 0)
     {
         set_error_codes(SENDTO, FUNCTION, 0);
@@ -135,7 +135,7 @@ void receive_icmp_packet()
     msg.msg_iovlen = 1;
 
     // Start receiving a response
-    ret = recvmsg(g_data.sockfd, msg, 0);
+    ret = recvmsg(g_data.sock_fd, &msg, 0);
     if (ret < 0)
     {
         set_error_codes(RECVMSG, FUNCTION, 0);
@@ -145,6 +145,7 @@ void receive_icmp_packet()
     ip = (struct ip *)packet;
     if (ip->ip_p != IPPROTO_ICMP || ip->ip_v != AF_INET)
     {
+        exit(0);
     }
     icmp = (struct icmp *)(packet + (ip->ip_hl << 2));
     
@@ -231,8 +232,8 @@ void loop()
     signal_handler(SIGALRM);
     while (true)
     {
-    //    if (g_data.sent)
-    //        receive_icmp_packet();
+       if (g_data.sent)
+           receive_icmp_packet();
         usleep(10);
     }
 }
@@ -244,7 +245,7 @@ int main(int argc, char **argv)
     if (g_data.dest.ai == NULL)
     {
         // TODO: Print error message here.
-        return -1;
+        return (1);
     }
 
     g_data.dest.sa = g_data.dest.ai->ai_addr;
@@ -252,7 +253,7 @@ int main(int argc, char **argv)
     if (!get_hostname())
     {
         // TODO: Print error message here.
-        return -1;
+        return (1);
     }
 
     printf("[Target]: %s\n", g_data.hostname);
