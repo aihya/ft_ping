@@ -113,4 +113,18 @@ struct addrinfo	*resolve_target(char *target);
 void			set_presentable_format(void);
 int				set_hostname(void);
 
+// errors.c
+void	setup_icmp_msgs(void);
+void	set_error_codes(enum e_function function,
+						enum e_error_type type,
+						enum e_error error);
+
+// print.c
+double	get_time_diff(void);
+void	print_response(int bytes_read, struct ip *ip, struct icmp *icmp);
+
+// socket.h
+int	setup_socket(void);
+
+
 #endif

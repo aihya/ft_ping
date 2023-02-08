@@ -1,6 +1,6 @@
 #include "ft_ping.h"
 
-int	setup_socket()
+int	setup_socket(void)
 {
     struct timeval time;
 
@@ -19,5 +19,3 @@ int	setup_socket()
     }
 	return (g_data.sock_fd);
 }
-
-// TODO: Must setup the setsockopt function for timeout

@@ -1,6 +1,6 @@
 #include "ft_ping.h"
 
-void	setup_icmp_msgs()
+void	setup_icmp_msgs(void)
 {
 	g_data.icmp_type_0[0] = "Destination network unreachable";
 	g_data.icmp_type_0[1] = "Destination host unreachable";
