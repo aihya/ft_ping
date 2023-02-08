@@ -20,7 +20,7 @@ OBJ = $(addprefix $(OBJ_DIR)/,$(OBJ_FILES))
 
 DEPS = ./inc/ft_ping.h
 
-INC = -Iinc
+INC = ./inc
 
 CC = gcc
 
@@ -29,9 +29,9 @@ CFLAGS = #-Wall \
 # 	 -Wextra
 
 
-$(OBJ_DIR)/%.o : $(SRC_DIR)/%.c
+$(OBJ_DIR)/%.o : $(SRC_DIR)/%.c $(DEPS)
 	mkdir -p $(OBJ_DIR)
-	$(CC) $(CFLAGS) $(INC) -o $@ -c $<
+	$(CC) $(CFLAGS) -I$(INC) -o $@ -c $<
 
 
 $(NAME) : $(OBJ)

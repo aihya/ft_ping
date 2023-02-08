@@ -1,6 +1,5 @@
 #include "ft_ping.h"
 
-
 uint16_t	calculate_checksum(uint16_t *buffer, size_t size)
 {
 	size_t		count;
