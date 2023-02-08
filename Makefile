@@ -4,7 +4,15 @@ NAME = ft_ping
 SRC_DIR = ./src
 OBJ_DIR = ./obj
 
-SRC_FILES = main_2.c send.c receive.c print.c utils.c errors.c
+SRC_FILES =	main_2.c \
+			send.c \
+			receive.c \
+			print.c \
+			utils.c \
+			errors.c \
+			info.c \
+			socket.c \
+
 OBJ_FILES = $(SRC_FILES:.c=.o)
 
 SRC = $(addprefix $(SRC_DIR)/,$(SRC_FILES))
