@@ -57,13 +57,13 @@ void set_options(int argc, char **argv)
 	i = 1;
 	while (i < argc)
 	{
-		if (!ft_strncmp("-v", argv[i]))
+		if (!ft_strcmp("-v", argv[i]))
 			g_data.options |= OPT_v;
-		else if (!ft_strncmp("-h", argv[i]))
+		else if (!ft_strcmp("-h", argv[i]))
 			g_data.options |= OPT_h;
-		else if (!ft_strncmp("-s", argv[i]))
+		else if (!ft_strcmp("-s", argv[i]))
 			g_data.options |= OPT_s;
-		else if (!ft_strncmp("-n", argv[i]))
+		else if (!ft_strcmp("-n", argv[i]))
 			g_data.options |= OPT_n;
 		i++;
 	}
