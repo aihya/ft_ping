@@ -29,8 +29,8 @@ CFLAGS = #-Wall \
 # 	 -Wextra
 
 
-$(OBJ_DIR)/%.o : $(SRC_DIR)/%.c
-	mkdir -p $(OBJ_DIR)
+$(OBJ_DIR)/%.o : $(SRC_DIR)/%.c $(DEPS)
+	@mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) $(INC) -o $@ -c $<
 
 
