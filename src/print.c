@@ -9,12 +9,26 @@ double	get_time_diff(void)
 	return (time);
 }
 
+void	print_header(void)
+{
+	int payload_size;
+	int total_size;
+
+	payload_size = sizeof(g_data.s_packet) - IPV4_HDRLEN -ICMP_HDRLEN;
+	total_size = sizeof(g_data.s_packet);
+	printf("PING %s (%s) %d(%d) bytes of data.\n",
+			g_data.target,
+			g_data.presentable,
+			payload_size,
+			total_size);
+}
+
 void	print_response(int bytes_read, struct ip *ip, struct icmp *icmp)
 {
-	if (!ft_strcmp(g_data.target, g_data.presentable))
+	if (!ft_strcmp(g_data.target, g_data.presentable) || g_data.options & OPT_n)
 	{
 		printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%.1lf ms\n",
-			bytes_read - IPV4_HDRLEN,
+			bytes_read - ICMP_HDRLEN - IPV4_HDRLEN,
 			g_data.presentable,
 			icmp->icmp_seq,
 			ip->ip_ttl,
@@ -23,11 +37,16 @@ void	print_response(int bytes_read, struct ip *ip, struct icmp *icmp)
 	else
 	{
 		printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d time=%.1lf ms\n",
-			bytes_read - IPV4_HDRLEN,
+			bytes_read - (IPV4_HDRLEN + ICMP_HDRLEN),
 			g_data.hostname,
 			g_data.presentable,
 			icmp->icmp_seq,
 			ip->ip_ttl,
 			get_time_diff());
 	}
+}
+
+void	print_verbose(void)
+{
+	
 }

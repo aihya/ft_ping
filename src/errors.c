@@ -17,21 +17,29 @@ void	setup_icmp_msgs(void)
 	g_data.icmp_type_0[12] = "Host unreachable for ToS";
 	g_data.icmp_type_0[13] = "Communication administratively prohibited";
 	g_data.icmp_type_0[14] = "Host Precedence Violation";
-	g_data.icmp_type_0[14] = "Precedence cutoff in effect";
+	g_data.icmp_type_0[15] = "Precedence cutoff in effect";
 	g_data.icmp_type_11[0] = "Time to live exceeded";
-    g_data.icmp_type_11[1] = "Fragment reassembly time exceeded";
+	g_data.icmp_type_11[1] = "Fragment reassembly time exceeded";
 }
 
 static void	set_destination_unreachable(int code)
 {
+	if (code >= 0 && code <= 15)
+		g_data.packet_error = g_data.icmp_type_0[code];
+	else
+		g_data.packet_error = NULL;
 }
 
 static void	set_time_exceeded(int code)
 {
+	if (code >= 0 && code <= 1)
+		g_data.packet_error = g_data.icmp_type_11[code];
+	else
+		g_data.packet_error = NULL;
 }
 
 // TODO: manage option -v in else
-static void	set_packet_error_message(int type, int code)
+void	set_packet_error_message(int type, int code)
 {
 	if (type == 3)
 		set_destination_unreachable(code);
@@ -50,5 +58,6 @@ void	set_error_codes(enum e_function function,
 						enum e_error error)
 {
 	g_data.function = function;
+	g_data.type = type;
 	g_data.error = error;
 }

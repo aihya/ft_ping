@@ -15,6 +15,8 @@
 # include <sys/time.h>
 # include <stdbool.h>
 # include <limits.h>
+# include <errno.h>
+# include "libft.h"
 
 # define IPV4_HDRLEN 20
 # define ICMP_HDRLEN 8
@@ -73,40 +75,33 @@ typedef struct s_data
 	char				*target;
 	char				hostname[256];
 	char				presentable[256];
-	char				s_packet[ICMP_HDRLEN + 56];
-	char				r_packet[IP_MAXPACKET];
+	char				s_packet[IPV4_HDRLEN + ICMP_HDRLEN + 56];
+	char				r_packet[256];
 	char				*packet_error;
 	char				*icmp_type_0[16];
 	char				*icmp_type_11[2];
 	struct timeval		s_time;
 	struct timeval		r_time;
+	char control[4096]; 
 	struct msghdr		msg;
 	struct iovec		iov;
+	int ttl;
 	enum e_error_type	type;
 	enum e_error		error;
 	enum e_function		function;
 }	t_data;
 
-t_data	g_data;
-
+# ifndef G_DATA
+#  define G_DATA
+extern t_data	g_data;
+# endif
 uint16_t calculate_checksum(uint16_t *buffer, size_t size);
 
 // send.h
-void	setup_packet(void);
 int		send_icmp_packet(void);
 
 // receive.h
 int		receive_icmp_packet(void);
-
-// Verbose mode
-void	print_response(int bytes, struct ip *ip, struct icmp *icmp);
-void	print_verbose(void);
-
-// utils.c
-int		ft_strlen(const char *str);
-void	*ft_memset(void *s, int c, size_t n);
-int		ft_strcmp(const char *s1, const char *s2);
-void	*ft_memcpy(void *dst, const void *src, size_t n);
 
 // info.c
 struct addrinfo	*resolve_target(char *target);
@@ -122,9 +117,14 @@ void	set_error_codes(enum e_function function,
 // print.c
 double	get_time_diff(void);
 void	print_response(int bytes_read, struct ip *ip, struct icmp *icmp);
+void	print_verbose(void);
+void	print_header(void);
 
 // socket.h
 int	setup_socket(void);
+
+// usage.h
+void usage(void);
 
 
 #endif

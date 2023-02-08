@@ -3,6 +3,12 @@
 int set_hostname(void)
 {
 	int ret;
+
+	if (g_data.options & OPT_n)
+	{
+		ft_memcpy(g_data.hostname, g_data.target, ft_strlen(g_data.target));
+		return (1);
+	}
 	if ((ret = getnameinfo(g_data.dest.sa, g_data.dest.ai->ai_addrlen, 
 					g_data.hostname, sizeof(g_data.hostname), NULL, 0, 0)) < 0)
 	{

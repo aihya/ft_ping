@@ -1,50 +1,50 @@
 
 NAME = ft_ping
 
-SRC_DIR = ./src
-OBJ_DIR = ./obj
+SRC_PATH = ./src
+OBJ_PATH = ./obj
 
-SRC_FILES =	main_2.c \
-			send.c \
-			receive.c \
-			print.c \
-			utils.c \
-			errors.c \
-			info.c \
-			socket.c \
+SRC_FILES =	usage.c \
+		print.c \
+		send.c \
+		receive.c \
+		errors.c \
+		info.c \
+		socket.c \
+		main.c
 
 OBJ_FILES = $(SRC_FILES:.c=.o)
 
-SRC = $(addprefix $(SRC_DIR)/,$(SRC_FILES))
-OBJ = $(addprefix $(OBJ_DIR)/,$(OBJ_FILES))
+SRC = $(addprefix $(SRC_PATH)/,$(SRC_FILES))
+OBJ = $(addprefix $(OBJ_PATH)/,$(OBJ_FILES))
 
 DEPS = ./inc/ft_ping.h
 
-INC = ./inc
+INC = -Iinc -Ilibft/include
 
 CC = gcc
 
-CFLAGS = -Wall -Werror -Wextra
+CFLAGS = #-Wall -Werror -Wextra
 
+all : libft_all $(NAME)
 
-$(OBJ_DIR)/%.o : $(SRC_DIR)/%.c $(DEPS)
-	mkdir -p $(OBJ_DIR)
-	$(CC) $(CFLAGS) -I$(INC) -o $@ -c $<
+$(OBJ_PATH)/%.o : $(SRC_PATH)/%.c $(DEPS)
+	@mkdir -p $(OBJ_PATH)
+	$(CC) $(CFLAGS) $(INC) -Llibft -lft -o $@ -c $<
 
+libft_all :
+	make -C libft
 
 $(NAME) : $(OBJ)
-	$(CC) $(CFLAGS) $(INC) $< -o $@
-
-
-all : $(NAME)
-
+	gcc $(OBJ) -Llibft -lft -o $@
 
 clean :
-	rm -rf $(OBJ_DIR)
-
+	make -C libft clean
+	/bin/rm -rf $(OBJ_PATH) 2> /dev/null
 
 fclean : clean
-	rm -rf $(NAME)
-
+	make -C libft fclean
+	/bin/rm -f $(NAME)
 
 re : fclean all
+
