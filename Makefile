@@ -24,9 +24,7 @@ INC = ./inc
 
 CC = gcc
 
-CFLAGS = #-Wall \
-# 	 -Werror \
-# 	 -Wextra
+CFLAGS = -Wall -Werror -Wextra
 
 
 $(OBJ_DIR)/%.o : $(SRC_DIR)/%.c $(DEPS)
