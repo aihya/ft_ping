@@ -25,13 +25,11 @@ void	print_header(void)
 
 void	print_error(struct sock_extended_err *error)
 {
-	struct sockaddr_in  *sin;
-    char                *error_msg;
+	struct sockaddr_in	*sin;
+	char				*error_msg;
 	
 	sin = (struct sockaddr_in *)SO_EE_OFFENDER(error);
-	presentable_format(&(sin->sin_addr),
-			g_data.last_presentable,
-			sizeof(g_data.last_presentable));
+	presentable_format(&(sin->sin_addr), g_data.last_presentable, sizeof(g_data.last_presentable));
 	if (g_data.opt.options & OPT_n)
 		printf("From %s ", g_data.last_presentable);
 	else
@@ -48,18 +46,11 @@ void	print_response(int bytes, char *packet, struct sock_extended_err *e)
 	struct ip	*ip;
 	struct icmp	*icmp;
 
-	ip = (struct ip *)packet;
 	if (e)
-	{
-		print_error(e);
-		return ;
-	}
-    if (ip->ip_p == IPPROTO_ICMP && ip->ip_v == IPVERSION)
-    {
-	    icmp = (struct icmp *)(packet + (ip->ip_hl * 4));
-        if (icmp->icmp_type != ICMP_ECHOREPLY)
-            printf("ok ok\n");
-    }
+		return (print_error(e));
+
+	ip = (struct ip *)packet;
+	icmp = (struct icmp *)(packet + (ip->ip_hl << 2));
 	if (g_data.opt.options & OPT_n)
 	{
 		printf("%d bytes from %s: icmp_seq=%d",

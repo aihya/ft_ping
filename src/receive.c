@@ -3,6 +3,7 @@
 static void	setup_msghdr(void)
 {
 	ft_memset(g_data.r_packet, 0x00, sizeof(g_data.r_packet));
+	ft_memset(g_data.control, 0x00, sizeof(g_data.control));
 	g_data.iov.iov_base = g_data.r_packet;
 	g_data.iov.iov_len = sizeof(g_data.r_packet);
 	g_data.msg.msg_name = g_data.dest.sa;
@@ -14,12 +15,6 @@ static void	setup_msghdr(void)
 	g_data.msg.msg_iovlen = 1;
 }
 
-static void update_msghdr(void)
-{
-    ft_memset(g_data.r_packet, 0x00, sizeof(g_data.r_packet));
-
-}
-
 static int	is_valid_packet(void)
 {
 	struct ip	*ip;
@@ -27,7 +22,7 @@ static int	is_valid_packet(void)
 	uint16_t	checksum;
 
 	ip = (struct ip *)(g_data.r_packet);
-	if (ip->ip_p == IPPROTO_ICMP)
+	if (ip->ip_p == IPPROTO_ICMP && ip->ip_v == IPVERSION)
 	{
 		icmp = (struct icmp *)(g_data.r_packet + (ip->ip_hl*4));
 		printf("%d -- %d\n", icmp->icmp_id, getpid());
@@ -49,41 +44,42 @@ void	receive_icmp_packet(void)
 	struct icmp					*icmp;
 	struct cmsghdr				*cmsg;
 	struct sock_extended_err	*error;
-	int							bytes;
-
-
-    printf("[DEBUG] %s\n", __FUNCTION__);
+	int							error_bytes;
+	int							normal_bytes;
 
 	setup_msghdr();
-	bytes = 0 | recvmsg(g_data.sock_fd, &(g_data.msg), 0);
 	error = NULL;
-
-	if (bytes < 0)
+	normal_bytes = recvmsg(g_data.sock_fd, &(g_data.msg), 0);
+	error_bytes = recvmsg(g_data.sock_fd, &(g_data.msg), MSG_ERRQUEUE);
+	if (error_bytes > 0)
 	{
-        perror("[DEBUG] recvmsg");
-	    bytes = 0 | recvmsg(g_data.sock_fd, &(g_data.msg), MSG_ERRQUEUE);
-        ip = (struct ip *)g_data.r_packet;
-        icmp = (struct icmp *)(g_data.r_packet + (ip->ip_hl*4));
-        printf("[DEBUG 1] type: %d code: %d - %d\n", icmp->icmp_type, icmp->icmp_code, ip->ip_p);
+		printf("bytes error: %d\n", error_bytes);
 		cmsg = CMSG_FIRSTHDR(&(g_data.msg));
 		while (cmsg)
 		{
 			if (cmsg->cmsg_level == SOL_IP && cmsg->cmsg_type == IP_RECVERR)
             {
 				error = (struct sock_extended_err *)CMSG_DATA(cmsg);
-                break ;
             }
 			cmsg = CMSG_NXTHDR(&(g_data.msg), cmsg);
 		}
+		print_response(error_bytes, g_data.r_packet, error);
+
 	}
-    else
+    else if (normal_bytes > 0)
     {
 	    gettimeofday(&(g_data.r_time), 0);
         ip = (struct ip *)g_data.r_packet;
-        icmp = (struct icmp *)(g_data.r_packet + (ip->ip_hl*4));
-        printf("[DEBUG] type: %d code: %d - %d\n", icmp->icmp_type, icmp->icmp_code, ip->ip_p);
+        icmp = (struct icmp *)(g_data.r_packet + (ip->ip_hl << 2));
+        printf("[DEBUG] type: %d code: %d - %d\n", icmp->icmp_type, icmp->icmp_code, errno);
+		print_response(normal_bytes, g_data.r_packet, error);
+
     }
-	printf("[DEBUG] bytes: %d e: %p\n", bytes, error);
-	print_response(bytes, g_data.r_packet, error);
-	g_data.sent = 0;
+
+	// gettimeofday(&(g_data.r_time), 0);
+	// printf("[DEBUG] bytes: %d e: %p\n", bytes, error);
+	// printf("\n");
+	// print_response(bytes, g_data.r_packet, error);
+	// printf("\n");
+	// g_data.sent = 0;
 }

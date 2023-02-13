@@ -93,11 +93,11 @@ typedef struct s_data
 	char				end_hostname[256];
 	char				end_presentable[256];
 	char				last_presentable[256];
-	char				s_packet[ICMP_HDRLEN + 56];
-	char				r_packet[IP_MAXPACKET];
+	char				s_packet[ICMP_HDRLEN + 1];
+	char				r_packet[1024];
 	char				*icmp_type_0[16];
 	char				*icmp_type_11[2];
-	char				control[4096]; 
+	char				control[1024]; 
 	struct timeval		s_time;
 	struct timeval		r_time;
 	struct msghdr		msg;
