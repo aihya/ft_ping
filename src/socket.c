@@ -19,11 +19,15 @@ int	setup_socket(void)
         set_error_codes(SETSOCKOPT, FUNCTION, 0);
         return (-1);
     }
+    if (setsockopt(g_data.sock_fd, IPPROTO_IP, IP_TTL, &(g_data.opt.t), sizeof(g_data.opt.t)) < 0)
+    {
+    	set_error_codes(SETSOCKOPT, FUNCTION, 0);
+	    return (-1);
+    }
     if (setsockopt(g_data.sock_fd, SOL_IP, IP_RECVERR, &on, sizeof(on)) < 0)
     {
-	    printf("Blip\n");
     	set_error_codes(SETSOCKOPT, FUNCTION, 0);
-	return (-1);
+	    return (-1);
     }
 	return (g_data.sock_fd);
 }

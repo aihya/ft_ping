@@ -1,16 +1,32 @@
 #include "ft_ping.h"
 
-int set_hostname(void)
+int resolve_hostname(enum e_dest dest, struct in_addr *sin_addr)
 {
-	int ret;
+	int					ret;
+	struct sockaddr_in	sa_in;
+	struct sockaddr		*sa;
+	socklen_t			sa_len;
+	char				*buf;
+	size_t				buf_len;
 
-	if (g_data.options & OPT_n)
+	if (dest == END_POINT)
 	{
-		ft_memcpy(g_data.hostname, g_data.target, ft_strlen(g_data.target));
-		return (1);
+		sa = g_data.dest.sa;
+		sa_len = g_data.dest.ai->ai_addrlen;
+		buf = g_data.end_hostname;
+		buf_len = sizeof(g_data.end_hostname);
 	}
-	if ((ret = getnameinfo(g_data.dest.sa, g_data.dest.ai->ai_addrlen, 
-					g_data.hostname, sizeof(g_data.hostname), NULL, 0, 0)) < 0)
+	else if (dest == LAST_POINT)
+	{
+		sa_in.sin_family = AF_INET;
+		inet_pton(AF_INET, g_data.last_presentable, &(sa_in.sin_addr));
+		sa = (struct sockaddr *)&sa_in;
+		sa_len = sizeof(struct sockaddr_in);
+		buf = g_data.last_hostname;
+		buf_len = sizeof(g_data.last_hostname);
+	}
+	ret = getnameinfo(sa, sa_len, buf, buf_len, NULL, 0, 0);
+	if (ret < 0)
 	{
 		set_error_codes(GETNAMEINFO, FUNCTION, ret);
 		return (-1);
@@ -18,11 +34,14 @@ int set_hostname(void)
 	return (1);
 }
 
-void set_presentable_format(void)
+int	presentable_format(struct in_addr *sin_addr, char *buffer, size_t len)
 {
-	struct sockaddr_in *sa_in;
-	sa_in = (struct sockaddr_in *)(g_data.dest.sa);
-	inet_ntop(AF_INET, &(sa_in->sin_addr), g_data.presentable, sizeof(g_data.presentable));
+	if (inet_ntop(AF_INET, sin_addr, buffer, len) == NULL)
+	{
+		set_error_codes(INET_NTOP, FUNCTION, errno);
+		return (-1);
+	}
+	return (1);
 }
 
 struct addrinfo	*resolve_target(char *target)

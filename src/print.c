@@ -14,36 +14,62 @@ void	print_header(void)
 	int payload_size;
 	int total_size;
 
-	payload_size = sizeof(g_data.s_packet) - IPV4_HDRLEN -ICMP_HDRLEN;
-	total_size = sizeof(g_data.s_packet);
+	payload_size = sizeof(g_data.s_packet) - ICMP_HDRLEN;
+	total_size = sizeof(g_data.s_packet) + IPV4_HDRLEN;
 	printf("PING %s (%s) %d(%d) bytes of data.\n",
 			g_data.target,
-			g_data.presentable,
+			g_data.end_presentable,
 			payload_size,
 			total_size);
 }
 
-void	print_response(int bytes_read, struct ip *ip, struct icmp *icmp)
+void	print_error(struct sock_extended_err *error)
 {
-	if (!ft_strcmp(g_data.target, g_data.presentable) || g_data.options & OPT_n)
+	struct sockaddr_in *sin;
+	
+	sin = (struct sockaddr_in *)SO_EE_OFFENDER(error);
+	presentable_format(&(sin->sin_addr),
+			g_data.last_presentable,
+			sizeof(g_data.last_presentable));
+	if (g_data.opt.options & OPT_n)
+		printf("From %s ", g_data.last_presentable);
+	else
 	{
-		printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%.1lf ms\n",
-			bytes_read - ICMP_HDRLEN - IPV4_HDRLEN,
-			g_data.presentable,
-			icmp->icmp_seq,
-			ip->ip_ttl,
-			get_time_diff());
+		resolve_hostname(LAST_POINT, &(sin->sin_addr));
+		printf("From %s (%s) ", g_data.last_hostname, g_data.last_presentable);
+	}
+	set_packet_error_message(error->ee_type, error->ee_code);
+	printf("icmp_seq=%d %s\n", g_data.sequence, g_data.packet_error);
+}
+
+void	print_response(int bytes, char *packet, struct sock_extended_err *e)
+{
+	struct ip	*ip;
+	struct icmp	*icmp;
+
+	ip = (struct ip *)packet;
+	icmp = (struct icmp *)(packet + (ip->ip_hl << 2));
+	if (e)
+	{
+		print_error(e);
+		return ;
+	}
+	if (g_data.opt.options & OPT_n)
+	{
+		printf("%d bytes from %s: icmp_seq=%d",
+			bytes - ICMP_HDRLEN - IPV4_HDRLEN,
+			g_data.end_presentable,
+			icmp->icmp_seq);
 	}
 	else
 	{
-		printf("%d bytes from %s (%s): icmp_seq=%d ttl=%d time=%.1lf ms\n",
-			bytes_read - (IPV4_HDRLEN + ICMP_HDRLEN),
-			g_data.hostname,
-			g_data.presentable,
-			icmp->icmp_seq,
-			ip->ip_ttl,
-			get_time_diff());
+		printf("%d bytes from %s (%s): icmp_seq=%d",
+			bytes - IPV4_HDRLEN,
+			g_data.end_hostname,
+			g_data.end_presentable,
+			icmp->icmp_seq);
 	}
+	printf(" ttl=%d time=%.1f\n", ip->ip_ttl, get_time_diff());
 }
 
 void	print_verbose(void)

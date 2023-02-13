@@ -47,7 +47,7 @@ void	set_packet_error_message(int type, int code)
 		set_time_exceeded(code);
 	else
 	{
-		if (g_data.options & OPT_v)
+		if (g_data.opt.options & OPT_v)
 			print_verbose();
 	}
 }
