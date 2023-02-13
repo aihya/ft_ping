@@ -26,7 +26,7 @@ static void	signal_handler(int sig)
 	if (sig == SIGALRM)
 	{
 		send_icmp_packet();
-		}
+	}
 	else if (sig == SIGINT || sig == SIGQUIT)
 	{
 		printf("Signal: %s\n", sig == SIGINT ? "SIGINT" : "SIGQUIT");
@@ -42,15 +42,9 @@ static void	loop()
 	signal(SIGINT, signal_handler);
 	signal(SIGQUIT, signal_handler);
 	print_header();
-	// signal_handler(SIGALRM);
-	send_icmp_packet();
+	signal_handler(SIGALRM);
 	while (true)
 	{
-		if (g_data.sent)
-		{
-			receive_icmp_packet();
-			alarm(1);
-		}
 		usleep(10);
 	}
 }

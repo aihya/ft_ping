@@ -25,7 +25,8 @@ void	print_header(void)
 
 void	print_error(struct sock_extended_err *error)
 {
-	struct sockaddr_in *sin;
+	struct sockaddr_in  *sin;
+    char                *error_msg;
 	
 	sin = (struct sockaddr_in *)SO_EE_OFFENDER(error);
 	presentable_format(&(sin->sin_addr),
@@ -38,8 +39,8 @@ void	print_error(struct sock_extended_err *error)
 		resolve_hostname(LAST_POINT, &(sin->sin_addr));
 		printf("From %s (%s) ", g_data.last_hostname, g_data.last_presentable);
 	}
-	set_packet_error_message(error->ee_type, error->ee_code);
-	printf("icmp_seq=%d %s\n", g_data.sequence, g_data.packet_error);
+	error_msg = set_packet_error_message(error->ee_type, error->ee_code);
+	printf("icmp_seq=%d %s\n", g_data.sequence, error_msg);
 }
 
 void	print_response(int bytes, char *packet, struct sock_extended_err *e)
@@ -48,12 +49,17 @@ void	print_response(int bytes, char *packet, struct sock_extended_err *e)
 	struct icmp	*icmp;
 
 	ip = (struct ip *)packet;
-	icmp = (struct icmp *)(packet + (ip->ip_hl << 2));
 	if (e)
 	{
 		print_error(e);
 		return ;
 	}
+    if (ip->ip_p == IPPROTO_ICMP && ip->ip_v == IPVERSION)
+    {
+	    icmp = (struct icmp *)(packet + (ip->ip_hl * 4));
+        if (icmp->icmp_type != ICMP_ECHOREPLY)
+            printf("ok ok\n");
+    }
 	if (g_data.opt.options & OPT_n)
 	{
 		printf("%d bytes from %s: icmp_seq=%d",

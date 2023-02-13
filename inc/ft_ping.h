@@ -95,7 +95,6 @@ typedef struct s_data
 	char				last_presentable[256];
 	char				s_packet[ICMP_HDRLEN + 56];
 	char				r_packet[IP_MAXPACKET];
-	char				*packet_error;
 	char				*icmp_type_0[16];
 	char				*icmp_type_11[2];
 	char				control[4096]; 
@@ -128,7 +127,7 @@ int				presentable_format(struct in_addr *sin_addr, char *buffer, size_t len);
 int				resolve_hostname(enum e_dest dest, struct in_addr *sin_addr);
 
 // errors.c
-void	set_packet_error_message(int type, int code);
+char    *set_packet_error_message(int type, int code);
 void	setup_icmp_msgs(void);
 void	set_error_codes(enum e_function function,
 						enum e_error_type type,

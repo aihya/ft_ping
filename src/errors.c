@@ -22,34 +22,33 @@ void	setup_icmp_msgs(void)
 	g_data.icmp_type_11[1] = "Fragment reassembly time exceeded";
 }
 
-static void	set_destination_unreachable(int code)
+static char *set_destination_unreachable(int code)
 {
 	if (code >= 0 && code <= 15)
-		g_data.packet_error = g_data.icmp_type_0[code];
-	else
-		g_data.packet_error = NULL;
+		return (g_data.icmp_type_0[code]);
+	return (NULL);
 }
 
-static void	set_time_exceeded(int code)
+static char *set_time_exceeded(int code)
 {
 	if (code >= 0 && code <= 1)
-		g_data.packet_error = g_data.icmp_type_11[code];
-	else
-		g_data.packet_error = NULL;
+	    return (g_data.icmp_type_11[code]);
+    return (NULL);
 }
 
 // TODO: manage option -v in else
-void	set_packet_error_message(int type, int code)
+char    *set_packet_error_message(int type, int code)
 {
 	if (type == 3)
-		set_destination_unreachable(code);
+		return (set_destination_unreachable(code));
 	else if (type == 11)
-		set_time_exceeded(code);
+		return (set_time_exceeded(code));
 	else
 	{
 		if (g_data.opt.options & OPT_v)
 			print_verbose();
 	}
+    return (NULL);
 }
 
 // Error management function for internal errors
