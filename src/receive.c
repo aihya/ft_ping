@@ -6,8 +6,7 @@ static void	setup_msghdr(void)
 	ft_memset(g_data.control, 0x00, sizeof(g_data.control));
 	g_data.iov.iov_base = g_data.r_packet;
 	g_data.iov.iov_len = sizeof(g_data.r_packet);
-	g_data.msg.msg_name = g_data.dest.sa;
-	g_data.msg.msg_namelen = g_data.dest.ai->ai_addrlen;
+	g_data.msg = (struct msghdr){0};
 	g_data.msg.msg_control = g_data.control;
 	g_data.msg.msg_controllen = sizeof(g_data.control);
 	g_data.msg.msg_flags = 0;
@@ -15,71 +14,53 @@ static void	setup_msghdr(void)
 	g_data.msg.msg_iovlen = 1;
 }
 
-static int	is_valid_packet(void)
+void	receive_icmp_error(void)
 {
-	struct ip	*ip;
-	struct icmp	*icmp;
-	uint16_t	checksum;
+	struct cmsghdr				*cmsg;
+	struct sock_extended_err	*error;
+	int							bytes;
 
-	ip = (struct ip *)(g_data.r_packet);
-	if (ip->ip_p == IPPROTO_ICMP && ip->ip_v == IPVERSION)
+	bytes = 0 | recvmsg(g_data.sock_fd, &(g_data.msg), MSG_ERRQUEUE);
+	g_data.sent = false;
+	error = NULL;
+	cmsg = CMSG_FIRSTHDR(&(g_data.msg));
+	while (cmsg)
 	{
-		icmp = (struct icmp *)(g_data.r_packet + (ip->ip_hl*4));
-		printf("%d -- %d\n", icmp->icmp_id, getpid());
-		checksum = calculate_checksum((uint16_t *)icmp,
-				sizeof(g_data.r_packet) - IPV4_HDRLEN);
-		if (icmp->icmp_type == ICMP_ECHOREPLY &&
-			icmp->icmp_code == 0)
+		if (cmsg->cmsg_level == SOL_IP && cmsg->cmsg_type == IP_RECVERR)
 		{
-			printf("Received packet is valid\n");
-			return (1);
+			error = (struct sock_extended_err *)(CMSG_DATA(cmsg));
+			break ;
 		}
+		cmsg = CMSG_NXTHDR(&(g_data.msg), cmsg);
 	}
-	return (0);
+	if (error)
+		print_error(bytes, error);
+	else if (g_data.opt.options & OPT_v)
+		printf("Verbose mode message\n");
+	return ;
 }
 
 void	receive_icmp_packet(void)
 {
 	struct ip					*ip;
 	struct icmp					*icmp;
-	struct cmsghdr				*cmsg;
-	struct sock_extended_err	*error;
-	int							error_bytes;
-	int							normal_bytes;
+	int							bytes;
 
 	setup_msghdr();
-	error = NULL;
-	normal_bytes = recvmsg(g_data.sock_fd, &(g_data.msg), 0);
-	error_bytes = recvmsg(g_data.sock_fd, &(g_data.msg), MSG_ERRQUEUE);
-	if (error_bytes > 0)
+	bytes = 0 | recvmsg(g_data.sock_fd, &(g_data.msg), 0);
+	ip = (struct ip *)(g_data.r_packet);
+	if (ip->ip_p == IPPROTO_ICMP && ip->ip_v == IPVERSION)
 	{
-		printf("bytes error: %d\n", error_bytes);
-		cmsg = CMSG_FIRSTHDR(&(g_data.msg));
-		while (cmsg)
+		icmp = (struct icmp *)(g_data.r_packet + (ip->ip_hl << 2));
+		if (icmp->icmp_type == ICMP_ECHOREPLY &&
+			icmp->icmp_code == 0 &&
+			icmp->icmp_id == (uint16_t)getpid())
 		{
-			if (cmsg->cmsg_level == SOL_IP && cmsg->cmsg_type == IP_RECVERR)
-            {
-				error = (struct sock_extended_err *)CMSG_DATA(cmsg);
-            }
-			cmsg = CMSG_NXTHDR(&(g_data.msg), cmsg);
+			g_data.sent = false;
+			gettimeofday(&(g_data.r_time), 0);
+			print_response(bytes);
+			return ;
 		}
-		print_response(error_bytes, g_data.r_packet, error);
-
 	}
-    else if (normal_bytes > 0)
-    {
-	    gettimeofday(&(g_data.r_time), 0);
-        ip = (struct ip *)g_data.r_packet;
-        icmp = (struct icmp *)(g_data.r_packet + (ip->ip_hl << 2));
-        printf("[DEBUG] type: %d code: %d - %d\n", icmp->icmp_type, icmp->icmp_code, errno);
-		print_response(normal_bytes, g_data.r_packet, error);
-
-    }
-
-	// gettimeofday(&(g_data.r_time), 0);
-	// printf("[DEBUG] bytes: %d e: %p\n", bytes, error);
-	// printf("\n");
-	// print_response(bytes, g_data.r_packet, error);
-	// printf("\n");
-	// g_data.sent = 0;
+	receive_icmp_error();
 }

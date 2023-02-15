@@ -23,13 +23,25 @@ void	print_header(void)
 			total_size);
 }
 
-void	print_error(struct sock_extended_err *error)
+void	print_error(int bytes, struct sock_extended_err *error)
 {
+	struct ip			*ip;
+	struct icmp			*icmp;
 	struct sockaddr_in	*sin;
 	char				*error_msg;
-	
+	char				*packet;
+
 	sin = (struct sockaddr_in *)SO_EE_OFFENDER(error);
-	presentable_format(&(sin->sin_addr), g_data.last_presentable, sizeof(g_data.last_presentable));
+	if (error->ee_errno == EAGAIN)
+	{
+		printf("Destination unreachable\n");
+	}
+	icmp = (struct icmp *)(g_data.r_packet);
+	presentable_format(
+		&(sin->sin_addr),
+		g_data.last_presentable,
+		sizeof(g_data.last_presentable)
+	);
 	if (g_data.opt.options & OPT_n)
 		printf("From %s ", g_data.last_presentable);
 	else
@@ -38,17 +50,16 @@ void	print_error(struct sock_extended_err *error)
 		printf("From %s (%s) ", g_data.last_hostname, g_data.last_presentable);
 	}
 	error_msg = set_packet_error_message(error->ee_type, error->ee_code);
-	printf("icmp_seq=%d %s\n", g_data.sequence, error_msg);
+	printf("icmp_seq=%d %s\n", icmp->icmp_seq, error_msg);
 }
 
-void	print_response(int bytes, char *packet, struct sock_extended_err *e)
+void	print_response(int bytes)
 {
 	struct ip	*ip;
 	struct icmp	*icmp;
+	char		*packet;
 
-	if (e)
-		return (print_error(e));
-
+	packet = g_data.r_packet;
 	ip = (struct ip *)packet;
 	icmp = (struct icmp *)(packet + (ip->ip_hl << 2));
 	if (g_data.opt.options & OPT_n)
@@ -66,7 +77,7 @@ void	print_response(int bytes, char *packet, struct sock_extended_err *e)
 			g_data.end_presentable,
 			icmp->icmp_seq);
 	}
-	printf(" ttl=%d time=%.1f\n", ip->ip_ttl, get_time_diff());
+	printf(" ttl=%d time=%.1f ms\n", ip->ip_ttl, get_time_diff());
 }
 
 void	print_verbose(void)

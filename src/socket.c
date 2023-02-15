@@ -24,7 +24,7 @@ int	setup_socket(void)
     	set_error_codes(SETSOCKOPT, FUNCTION, 0);
 	    return (-1);
     }
-    if (setsockopt(g_data.sock_fd, SOL_IP, IP_RECVERR, &on, sizeof(on)) < 0)
+    if (setsockopt(g_data.sock_fd, SOL_IP, IP_RECVERR, &(on), sizeof(on)) < 0)
     {
     	set_error_codes(SETSOCKOPT, FUNCTION, 0);
 	    return (-1);

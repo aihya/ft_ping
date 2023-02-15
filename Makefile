@@ -4,14 +4,7 @@ NAME = ft_ping
 SRC_PATH = ./src
 OBJ_PATH = ./obj
 
-SRC_FILES =	usage.c \
-		print.c \
-		send.c \
-		receive.c \
-		errors.c \
-		info.c \
-		socket.c \
-		main.c
+SRC_FILES = main.c
 
 OBJ_FILES = $(SRC_FILES:.c=.o)
 

@@ -8,26 +8,28 @@ static void	setup_packet(void)
 	icmp = (struct icmp *)(g_data.s_packet);
 	icmp->icmp_code = 0;
 	icmp->icmp_type = ICMP_ECHO;
-	icmp->icmp_seq = ++g_data.sequence;
-	icmp->icmp_id = getpid() & 0xffff;
+	icmp->icmp_seq = ++(g_data.sequence);
+	icmp->icmp_id = (uint16_t)getpid();
 	icmp->icmp_cksum = calculate_checksum(
-			(uint16_t *)(g_data.s_packet),
-			sizeof(g_data.s_packet));
+		(uint16_t *)(g_data.s_packet),
+		sizeof(g_data.s_packet)
+	);
 }
 
 int	send_icmp_packet(void)
 {
 	int	bytes_sent;
 
-    printf("[DEBUG] %s\n", __FUNCTION__);
 	setup_packet();
-	bytes_sent = sendto(
-			g_data.sock_fd,
-			g_data.s_packet,
-			sizeof(g_data.s_packet),
-			0,
-		    g_data.dest.sa,
-			g_data.dest.ai->ai_addrlen);
+	bytes_sent = 0 | sendto(
+		g_data.sock_fd,
+		g_data.s_packet,
+		sizeof(g_data.s_packet),
+		0,
+		g_data.dest.sa,
+		g_data.dest.ai->ai_addrlen
+	);
+	g_data.sent = true;
 	gettimeofday(&(g_data.s_time), 0);
 	if (bytes_sent < 0)
 	{

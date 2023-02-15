@@ -27,6 +27,7 @@
 # define OPT_s 4
 # define OPT_n 8
 # define OPT_t 16
+# define OPT_c 32
 
 // Reference of functions used
 enum e_function
@@ -68,8 +69,10 @@ typedef struct s_time
 
 typedef struct s_dest
 {
-	struct sockaddr	*sa;
-	struct addrinfo	*ai;
+	struct sockaddr_in	*sin;
+	struct sockaddr		*sa;
+	struct addrinfo		ai;
+	char			*target;
 }	t_dest;
 
 typedef struct s_options
@@ -78,40 +81,63 @@ typedef struct s_options
 	int t;
 	int s;
 	int n;
-	int c;
+	int	c;
+	int	i;
 }	t_options;
+
+typedef struct s_socket
+{
+	int	fd;
+}	t_socket;
+
+typedef struct s_packet
+{
+	char			recv[IP_MAXPACKET];
+	char			send[IP_MAXPACKET];
+	char			control[IP_MAXPACKET];
+	struct iovec	iov;
+	struct msghdr	msg;
+	size_t			send_size;
+}	t_packet;
+
+typedef struct	s_hostname
+{
+	char	buf[256];
+}	t_hostname;
+
+typedef struct	s_presentable
+{
+	char	buf[256];
+}	t_presentable;
+
+typedef struct	s_err_msg
+{
+	char	*__0[16];
+	char	*__11[2];
+}	t_err_msg;
 
 typedef struct s_data
 {
+	t_presentable		presentable;
+	t_hostname			hostname;
+	t_packet			packet;
+	t_socket			socket;
 	t_dest				dest;
-	int					sock_fd;
-	int					sequence;
-	int					sent;
-	uint16_t			checksum;
-	char				*target;
-	char				last_hostname[256];
-	char				end_hostname[256];
-	char				end_presentable[256];
-	char				last_presentable[256];
-	char				s_packet[ICMP_HDRLEN + 1];
-	char				r_packet[1024];
-	char				*icmp_type_0[16];
-	char				*icmp_type_11[2];
-	char				control[1024]; 
-	struct timeval		s_time;
-	struct timeval		r_time;
-	struct msghdr		msg;
-	struct iovec		iov;
+	t_err_msg			err_msg;
 	t_options			opt;
+	t_recv				recv_info;
+	int					sequence;
+	int					is_sent;
+	char				*target;
+
 	enum e_error_type	type;
 	enum e_error		error;
 	enum e_function		function;
 }	t_data;
 
-# ifndef G_DATA
-#  define G_DATA
+
 extern t_data	g_data;
-# endif
+
 
 uint16_t calculate_checksum(uint16_t *buffer, size_t size);
 
@@ -135,7 +161,8 @@ void	set_error_codes(enum e_function function,
 
 // print.c
 double	get_time_diff(void);
-void	print_response(int bytes, char *packet, struct sock_extended_err *e);
+void	print_response(int bytes);
+void	print_error(int bytes, struct sock_extended_err *error);
 void	print_verbose(void);
 void	print_header(void);
 
@@ -143,7 +170,7 @@ void	print_header(void);
 int	setup_socket(void);
 
 // usage.h
-void usage(void);
+void usage(int __exit, int exit_code);
 
 
 #endif
