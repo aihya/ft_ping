@@ -64,6 +64,7 @@ void	parse_options(int nargs, char **args)
 	g_data.opt.t = MAXTTL;
 	g_data.opt.i = 1;
 	g_data.opt.c = -1;
+	g_data.opt.s = 56;
 	i = 0;
 	while (i < nargs)
 	{
@@ -87,7 +88,7 @@ void	parse_options(int nargs, char **args)
 		}
 		else if (!ft_strcmp("-s", args[i]))
 		{
-			if (i+1 < nargs && ft_isnumber(args[i+1]) && ft_atoi(args[i+1]) > 0)
+			if (i+1 < nargs && ft_isnumber(args[i+1]) && ft_atoi(args[i+1]) >= 0)
 			{
 				g_data.opt.options |= OPT_s;
 				g_data.opt.s = ft_atoi(args[i+1]);
@@ -130,6 +131,7 @@ void	parse_options(int nargs, char **args)
 			g_data.target = args[i];
 		i++;
 	}
+	g_data.packet.send_size = ICMP_HDRLEN + g_data.opt.s;
 }
 
 /**
@@ -203,8 +205,9 @@ void	set_hostname(struct in_addr addr)
 }
 
 void	create_socket()
-{
+{	
 	struct timeval	tv;
+	int				on;
 	int				__errno;
 
 	g_data.socket.fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
@@ -221,7 +224,8 @@ void	create_socket()
 	setsockopt(g_data.socket.fd, IPPROTO_IP, IP_TTL, &g_data.opt.t, sizeof(g_data.opt.t));
 	__errno = __errno || errno;
 
-	setsockopt(g_data.socket.fd, SOL_IP, IP_RECVERR, &tv, sizeof(tv));
+	on = 1;
+	setsockopt(g_data.socket.fd, SOL_IP, IP_RECVERR, &on, sizeof(on));
 	__errno = __errno || errno;
 
 	if (__errno)
@@ -231,23 +235,162 @@ void	create_socket()
 	}
 }
 
-void	sig_handler(int sig)
+////////////////////////////////////////////////////////////////////////////////
+// Functions to print bad response errors
+////////////////////////////////////////////////////////////////////////////////
+
+void	setup_icmp_msgs(void)
 {
-	if (sig == SIGALRM)
-	{
-		alarm(g_data.opt.i);
-		send_icmp();
-	}
-	else if (sig == SIGINT || sig == SIGQUIT)
-	{
-		// TODO: print statistics here
-		exit(SIGINT);
-	}
+	g_data.emsg._0[0] = "Destination network unreachable";
+	g_data.emsg._0[1] = "Destination host unreachable";
+	g_data.emsg._0[2] = "Destination protocol unreachable";
+	g_data.emsg._0[3] = "Destination port unreachable";
+	g_data.emsg._0[4] = "Fragmentation required, and DF flag set";
+	g_data.emsg._0[5] = "Source route failed";
+	g_data.emsg._0[6] = "Destination network unknown";
+	g_data.emsg._0[7] = "Destination host unknown";
+	g_data.emsg._0[8] = "Source host isolated";
+	g_data.emsg._0[9] = "Network administratively prohibited";
+	g_data.emsg._0[10] = "Host administratively prohibited";
+	g_data.emsg._0[11] = "Network unreachable for ToS";
+	g_data.emsg._0[12] = "Host unreachable for ToS";
+	g_data.emsg._0[13] = "Communication administratively prohibited";
+	g_data.emsg._0[14] = "Host Precedence Violation";
+	g_data.emsg._0[15] = "Precedence cutoff in effect";
+	g_data.emsg._11[0] = "Time to live exceeded";
+	g_data.emsg._11[1] = "Fragment reassembly time exceeded";
 }
 
-/////////////////////////////////////////////////////
-// Function responsible for receiving a response.
-/////////////////////////////////////////////////////
+static char *set_destination_unreachable(int code)
+{
+	if (code >= 0 && code <= 15)
+		return (g_data.emsg._0[code]);
+	return (NULL);
+}
+
+static char *set_time_exceeded(int code)
+{
+	if (code >= 0 && code <= 1)
+	    return (g_data.emsg._11[code]);
+    return (NULL);
+}
+
+// TODO: manage option -v in else
+char    *set_packet_error_message(int type, int code)
+{
+	if (type == 3)
+		return (set_destination_unreachable(code));
+	else if (type == 11)
+	{
+		return (set_time_exceeded(code));
+	}
+    return (NULL);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Function responsible for printing the errrors and valid icmp reply.
+////////////////////////////////////////////////////////////////////////////////
+
+double	get_time_diff(struct timeval *stime, struct timeval *rtime)
+{
+	double	time;
+
+	time = (rtime->tv_sec - stime->tv_sec) * 1000.;
+	time += (rtime->tv_usec - stime->tv_usec) / 1000.;
+	return (time);
+}
+
+void	print_header(void)
+{
+	int payload_size;
+	int total_size;
+
+	payload_size = g_data.packet.send_size - ICMP_HDRLEN;
+	total_size = g_data.packet.send_size + IPV4_HDRLEN;
+	printf("PING %s (%s) %d(%d) bytes of data.\n",
+			g_data.target,
+			g_data.presentable.buf,
+			payload_size,
+			total_size);
+}
+
+void	print_error(ssize_t bytes, struct sock_extended_err *error)
+{
+	struct ip			*ip;
+	struct icmp			*icmp;
+	struct sockaddr_in	*sin;
+	char				*error_msg;
+	char				*packet;
+
+	sin = (struct sockaddr_in *)SO_EE_OFFENDER(error);
+	icmp = (struct icmp *)(g_data.packet.recv);
+	set_presentable(sin->sin_addr);
+	if (g_data.opt.options & OPT_n)
+		printf("From %s ", g_data.presentable.buf);
+	else
+	{
+		set_hostname(sin->sin_addr);
+		printf("From %s (%s) ", g_data.hostname.buf, g_data.presentable.buf);
+	}
+	error_msg = set_packet_error_message(error->ee_type, error->ee_code);
+	printf("icmp_seq=%d %s\n", icmp->icmp_seq, error_msg);
+}
+
+void	print_icmp_reply(ssize_t bytes)
+{
+	struct ip		*ip;
+	struct icmp		*icmp;
+	char			*packet;
+	struct timeval	*stime;
+	struct timeval	rtime;
+
+	packet = g_data.packet.recv;
+	ip = (struct ip *)packet;
+	icmp = (struct icmp *)(packet + (ip->ip_hl << 2));
+	set_presentable(ip->ip_src);
+	if (g_data.opt.options & OPT_n)
+	{
+		printf("%ld bytes from %s: icmp_seq=%d ttl=%d",
+			bytes - ICMP_HDRLEN - IPV4_HDRLEN,
+			g_data.presentable.buf,
+			icmp->icmp_seq,
+			ip->ip_ttl
+		);
+	}
+	else
+	{
+		printf("%ld bytes from %s (%s): icmp_seq=%d ttl=%d",
+			bytes - IPV4_HDRLEN,
+			g_data.hostname.buf,
+			g_data.presentable.buf,
+			icmp->icmp_seq,
+			ip->ip_ttl);
+	}
+	if (g_data.opt.s >= sizeof(struct timeval))
+	{
+		gettimeofday(&rtime, 0);
+		stime = (struct timeval *)(icmp + 1);
+		printf(" time=%.1f ms", get_time_diff(stime, &rtime));
+	}
+	printf("\n");
+}
+
+void	print_response(ssize_t bytes, struct sock_extended_err *error)
+{
+	if (error)
+		print_error(bytes, error);
+	else
+		print_icmp_reply(bytes);
+}
+
+void	print_verbose(void)
+{
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Function responsible for receiving a response. 
+////////////////////////////////////////////////////////////////////////////////
 
 void	setup_msghdr(void)
 {
@@ -256,103 +399,114 @@ void	setup_msghdr(void)
 
 	iov = &(g_data.packet.iov);
 	msg = &(g_data.packet.msg);
+	// ft_memset(iov, 0x00, sizeof(struct iovec));
+	// ft_memset(msg, 0x00, sizeof(struct msghdr));
 	iov->iov_base = g_data.packet.recv;
 	iov->iov_len = sizeof(g_data.packet.recv);
 	msg->msg_iov = iov;
 	msg->msg_iovlen = 1;
-	msg->msg_control = g_data.packet.control;
-	msg->msg_controllen = sizeof(g_data.packet.control);
+	msg->msg_control = g_data.packet.ctrl;
+	msg->msg_controllen = sizeof(g_data.packet.ctrl);
 }
 
-void	process_response(bool error)
+void	process_response(ssize_t bytes)
 {
-	struct sock_extended_err	*e;
+	struct sock_extended_err	*error;
 	struct cmsghdr				*cmsg;
 
-	if (error)
+	error = NULL;
+	cmsg = CMSG_FIRSTHDR(&g_data.packet.msg);
+	while (cmsg)
 	{
-		e = NULL;
-		cmsg = CMSG_FIRSTHDR(&g_data.packet.msg);
-		while (cmsg)
-		{
-			if (cmsg->cmsg_level == SOL_IP && cmsg->cmsg_type == IP_RECVERR)
-				e = (struct sock_extended_err *)CMSG_DATA(cmsg);
-			cmsg = CMSG_NXTHDR(&g_data.packet.msg, cmsg);
-		}
-		if (e)
-		{
-			
-		}
+		if (cmsg->cmsg_level == SOL_IP && cmsg->cmsg_type == IP_RECVERR)
+			error = (struct sock_extended_err *)CMSG_DATA(cmsg);
+		cmsg = CMSG_NXTHDR(&g_data.packet.msg, cmsg);
 	}
-	else
-	{
-		
-	}
+	print_response(bytes, error);
 }
 
 void	recv_icmp(void)
 {
-	size_t		bytes;
-	struct ip	*ip;
-	struct icmp	*icmp;
+	ssize_t			bytes;
+	struct ip		*ip;
+	struct icmp		*icmp;
+	struct timeval	rtime;
 
-	bytes = 0 | recvmsg(g_data.socket.fd, &g_data.packet.msg, 0);
+	rtime = (struct timeval){0};
+	ft_memset(g_data.packet.recv, 0x00, sizeof(g_data.packet.recv));
+	ft_memset(g_data.packet.ctrl, 0x00, sizeof(g_data.packet.ctrl));
+	bytes = recvmsg(g_data.socket.fd, &(g_data.packet.msg), 0);
 	if (bytes > 0)
 	{
-		ip = (struct ip *)g_data.packet.revc;
-		if (ip->ip_p == IPPROTO_IP && ip->ip_v == IPVERSION)
+		printf("allo 1\n");
+		ip = (struct ip *)g_data.packet.recv;
+		if (ip->ip_p == IPPROTO_ICMP && ip->ip_v == IPVERSION)
 		{
 			icmp = (struct icmp *)(g_data.packet.recv + (ip->ip_hl << 2));
 			if (icmp->icmp_type == ICMP_ECHOREPLY &&
 				icmp->icmp_code == 0 &&
 				icmp->icmp_id == (uint16_t)getpid())
-				process_response(true);
+				process_response(bytes);
 		}
+		if (g_data.opt.options & OPT_v)
+			print_verbose();
 	}
-	else
+	else if (bytes < 0)
 	{
-		bytes = 0 | recvmsg(g_data.socket.fd, &g_data.packet.msg, MSG_ERRQUEUE);
-		process_response(false);
+		printf("allo 2\n");
+		bytes = recvmsg(g_data.socket.fd, &g_data.packet.msg, MSG_ERRQUEUE);
+		printf("recv bytes(error): %ld\n", bytes);
+		process_response(bytes);
 	}
+	
 	g_data.is_sent = false;
 }
 
-/////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // Function responsible for sending the echo request.
-/////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 void	setup_send_packet(void)
 {
 	struct icmp	*icmp;
 
+	ft_memset(g_data.packet.send, 0x00, sizeof(g_data.packet.send_size));
 	icmp = (struct icmp *)g_data.packet.send;
 	icmp->icmp_type = ICMP_ECHO;
 	icmp->icmp_code = 0;
 	icmp->icmp_id = (uint16_t)getpid();
-}
-
-void	update_send_packet(void)
-{
-	struct icmp	*icmp;
-
-	icmp = g_data.packet.send;
 	icmp->icmp_seq = ++g_data.sequence;
+	if (g_data.opt.s >= sizeof(struct timeval))
+		gettimeofday((void *)(icmp + 1), 0);
 	icmp->icmp_cksum = 0;
-	icmp->icmp_cksum = checksum((uint16_t *)packet, g_data.packet.send_size);
+	icmp->icmp_cksum = checksum((uint16_t *)icmp, g_data.packet.send_size);
 }
 
 void	send_icmp(void)
 {
-	update_send_packet();
+	setup_send_packet();
 	sendto(
 		g_data.socket.fd, 
 		g_data.packet.send, 
 		g_data.packet.send_size, 
 		0, 
 		g_data.dest.sa, 
-		sizeof(g_data.dest.ai.ai_addrlen)
+		g_data.dest.ai.ai_addrlen
 	);
 	g_data.is_sent = true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void	sig_handler(int sig)
+{
+	if (sig == SIGALRM)
+		send_icmp();
+	else if (sig == SIGINT || sig == SIGQUIT)
+	{
+		// TODO: print statistics here
+		exit(SIGINT);
+	}
 }
 
 void	main_loop()
@@ -360,15 +514,19 @@ void	main_loop()
 	signal(SIGALRM, sig_handler);
 	signal(SIGINT, sig_handler);
 	signal(SIGQUIT, sig_handler);
-
+	setup_icmp_msgs();
+	setup_msghdr();
+	print_header();
 	sig_handler(SIGALRM);
 	while (g_data.opt.c)
 	{
-		if (g_data.is_sent)
+		if (g_data.is_sent == true)
+		{
+			alarm(g_data.opt.i);
 			recv_icmp();
+		}
 		if (g_data.opt.options & OPT_c)
 			g_data.opt.c--;
-		usleep(10);
 	}
 }
 
@@ -376,9 +534,9 @@ int main(int argc, char **argv)
 {
 	parse_options(argc-1, argv+1);
 	get_addrinfo();
+	set_presentable(g_data.dest.sin->sin_addr);
 	set_hostname(g_data.dest.sin->sin_addr);
 	create_socket();
-	setup_send_packet();
-	setup_msghdr();
+	main_loop();
 	return (0);
 }

@@ -28,6 +28,7 @@
 # define OPT_n 8
 # define OPT_t 16
 # define OPT_c 32
+# define OPT_i 64
 
 // Reference of functions used
 enum e_function
@@ -94,7 +95,7 @@ typedef struct s_packet
 {
 	char			recv[IP_MAXPACKET];
 	char			send[IP_MAXPACKET];
-	char			control[IP_MAXPACKET];
+	char			ctrl[IP_MAXPACKET];
 	struct iovec	iov;
 	struct msghdr	msg;
 	size_t			send_size;
@@ -110,11 +111,11 @@ typedef struct	s_presentable
 	char	buf[256];
 }	t_presentable;
 
-typedef struct	s_err_msg
+typedef struct	s_emsg
 {
-	char	*__0[16];
-	char	*__11[2];
-}	t_err_msg;
+	char	*_0[16];
+	char	*_11[2];
+}	t_emsg;
 
 typedef struct s_data
 {
@@ -123,12 +124,12 @@ typedef struct s_data
 	t_packet			packet;
 	t_socket			socket;
 	t_dest				dest;
-	t_err_msg			err_msg;
+	t_emsg				emsg;
 	t_options			opt;
-	t_recv				recv_info;
 	int					sequence;
 	int					is_sent;
 	char				*target;
+	t_time				recv_time;
 
 	enum e_error_type	type;
 	enum e_error		error;
@@ -139,38 +140,38 @@ typedef struct s_data
 extern t_data	g_data;
 
 
-uint16_t calculate_checksum(uint16_t *buffer, size_t size);
+// uint16_t calculate_checksum(uint16_t *buffer, size_t size);
 
-// send.h
-int		send_icmp_packet(void);
+// // send.h
+// int		send_icmp_packet(void);
 
-// receive.h
-void	receive_icmp_packet(void);
+// // receive.h
+// void	receive_icmp_packet(void);
 
-// info.c
-struct addrinfo	*resolve_target(char *target);
-int				presentable_format(struct in_addr *sin_addr, char *buffer, size_t len);
-int				resolve_hostname(enum e_dest dest, struct in_addr *sin_addr);
+// // info.c
+// struct addrinfo	*resolve_target(char *target);
+// int				presentable_format(struct in_addr *sin_addr, char *buffer, size_t len);
+// int				resolve_hostname(enum e_dest dest, struct in_addr *sin_addr);
 
-// errors.c
-char    *set_packet_error_message(int type, int code);
-void	setup_icmp_msgs(void);
-void	set_error_codes(enum e_function function,
-						enum e_error_type type,
-						enum e_error error);
+// // errors.c
+// char    *set_packet_error_message(int type, int code);
+// void	setup_icmp_msgs(void);
+// void	set_error_codes(enum e_function function,
+// 						enum e_error_type type,
+// 						enum e_error error);
 
-// print.c
-double	get_time_diff(void);
-void	print_response(int bytes);
-void	print_error(int bytes, struct sock_extended_err *error);
-void	print_verbose(void);
-void	print_header(void);
+// // print.c
+// double	get_time_diff(void);
+// void	print_response(int bytes);
+// void	print_error(int bytes, struct sock_extended_err *error);
+// void	print_verbose(void);
+// void	print_header(void);
 
-// socket.h
-int	setup_socket(void);
+// // socket.h
+// int	setup_socket(void);
 
-// usage.h
-void usage(int __exit, int exit_code);
+// // usage.h
+// void usage(int __exit, int exit_code);
 
 
 #endif
