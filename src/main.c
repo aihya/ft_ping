@@ -110,18 +110,6 @@ void	parse_options(int nargs, char **args)
 			printf("Invalid option %s\n", args[i]);
 			exit(1);
 		}
-		else if (!ft_strcmp("-i", args[i]))
-		{
-			if (i+1 < nargs && ft_isnumber(args[i+1]) && ft_atoi(args[i+1]) > 0)
-			{
-				g_data.opt.options |= OPT_i;
-				g_data.opt.i = ft_atoi(args[i+1]);
-				i += 2;
-				continue;
-			}
-			printf("Invalid option %s\n", args[i]);
-			exit(1);
-		}
 		else if (args[i][0] == '-')
 		{
 			printf("Invalid option %s\n", args[i]);
@@ -320,33 +308,33 @@ void	print_error(ssize_t bytes, struct sock_extended_err *error)
 	struct icmp			*icmp;
 	struct sockaddr_in	*sin;
 	char				*error_msg;
-	char				*packet;
+    char				*packet;
 
-	sin = (struct sockaddr_in *)SO_EE_OFFENDER(error);
-	icmp = (struct icmp *)(g_data.packet.recv);
-	set_presentable(sin->sin_addr);
-	if (g_data.opt.options & OPT_n)
-		printf("From %s ", g_data.presentable.buf);
-	else
-	{
-		set_hostname(sin->sin_addr);
-		printf("From %s (%s) ", g_data.hostname.buf, g_data.presentable.buf);
-	}
-	error_msg = set_packet_error_message(error->ee_type, error->ee_code);
-	printf("icmp_seq=%d %s\n", icmp->icmp_seq, error_msg);
+    sin = (struct sockaddr_in *)SO_EE_OFFENDER(error);
+    icmp = (struct icmp *)(g_data.packet.recv);
+    set_presentable(sin->sin_addr);
+    if (g_data.opt.options & OPT_n)
+        printf("From %s ", g_data.presentable.buf);
+    else
+    {
+        set_hostname(sin->sin_addr);
+        printf("From %s (%s) ", g_data.hostname.buf, g_data.presentable.buf);
+    }
+    error_msg = set_packet_error_message(error->ee_type, error->ee_code);
+    printf("icmp_seq=%d %s\n", icmp->icmp_seq, error_msg);
 }
 
 void	print_icmp_reply(ssize_t bytes)
 {
-	struct ip		*ip;
-	struct icmp		*icmp;
-	char			*packet;
-	struct timeval	*stime;
-	struct timeval	rtime;
+    struct ip		*ip;
+    struct icmp		*icmp;
+    char			*packet;
+    struct timeval	*stime;
+    struct timeval	rtime;
 
-	packet = g_data.packet.recv;
-	ip = (struct ip *)packet;
-	icmp = (struct icmp *)(packet + (ip->ip_hl << 2));
+    packet = g_data.packet.recv;
+    ip = (struct ip *)packet;
+    icmp = (struct icmp *)(packet + (ip->ip_hl << 2));
 	set_presentable(ip->ip_src);
 	if (g_data.opt.options & OPT_n)
 	{
@@ -394,19 +382,15 @@ void	print_verbose(void)
 
 void	setup_msghdr(void)
 {
-	struct msghdr	*msg;
-	struct iovec	*iov;
-
-	iov = &(g_data.packet.iov);
-	msg = &(g_data.packet.msg);
-	// ft_memset(iov, 0x00, sizeof(struct iovec));
-	// ft_memset(msg, 0x00, sizeof(struct msghdr));
-	iov->iov_base = g_data.packet.recv;
-	iov->iov_len = sizeof(g_data.packet.recv);
-	msg->msg_iov = iov;
-	msg->msg_iovlen = 1;
-	msg->msg_control = g_data.packet.ctrl;
-	msg->msg_controllen = sizeof(g_data.packet.ctrl);
+    g_data.packet.iov = (struct iovec){0};
+    g_data.packet.msg = (struct msghdr){0};
+	g_data.packet.iov.iov_base = g_data.packet.recv;
+	g_data.packet.iov.iov_len = sizeof(g_data.packet.recv);
+	g_data.packet.msg.msg_iov = &g_data.packet.iov;
+	g_data.packet.msg.msg_iovlen = 1;
+    g_data.packet.msg.msg_flags = 0;
+	g_data.packet.msg.msg_control = g_data.packet.ctrl;
+	g_data.packet.msg.msg_controllen = sizeof(g_data.packet.ctrl);
 }
 
 void	process_response(ssize_t bytes)
@@ -422,43 +406,43 @@ void	process_response(ssize_t bytes)
 			error = (struct sock_extended_err *)CMSG_DATA(cmsg);
 		cmsg = CMSG_NXTHDR(&g_data.packet.msg, cmsg);
 	}
-	print_response(bytes, error);
+    if (error)
+        print_error(bytes, error);
+    else
+        print_icmp_reply(bytes);
 }
 
 void	recv_icmp(void)
 {
-	ssize_t			bytes;
+    ssize_t         bytes;
 	struct ip		*ip;
 	struct icmp		*icmp;
 	struct timeval	rtime;
 
+    setup_msghdr();
 	rtime = (struct timeval){0};
-	ft_memset(g_data.packet.recv, 0x00, sizeof(g_data.packet.recv));
-	ft_memset(g_data.packet.ctrl, 0x00, sizeof(g_data.packet.ctrl));
-	bytes = recvmsg(g_data.socket.fd, &(g_data.packet.msg), 0);
-	if (bytes > 0)
-	{
-		printf("allo 1\n");
-		ip = (struct ip *)g_data.packet.recv;
-		if (ip->ip_p == IPPROTO_ICMP && ip->ip_v == IPVERSION)
-		{
-			icmp = (struct icmp *)(g_data.packet.recv + (ip->ip_hl << 2));
-			if (icmp->icmp_type == ICMP_ECHOREPLY &&
-				icmp->icmp_code == 0 &&
-				icmp->icmp_id == (uint16_t)getpid())
-				process_response(bytes);
-		}
-		if (g_data.opt.options & OPT_v)
-			print_verbose();
-	}
-	else if (bytes < 0)
-	{
-		printf("allo 2\n");
-		bytes = recvmsg(g_data.socket.fd, &g_data.packet.msg, MSG_ERRQUEUE);
-		printf("recv bytes(error): %ld\n", bytes);
-		process_response(bytes);
-	}
-	
+    ft_memset(g_data.packet.recv, 0x00, IP_MAXPACKET);
+    ft_memset(g_data.packet.ctrl, 0x00, IP_MAXPACKET);
+    bytes = recvmsg(g_data.socket.fd, &(g_data.packet.msg), 0);
+    if (bytes > 0)
+    {
+    	ip = (struct ip *)g_data.packet.recv;
+    	if (ip->ip_p == IPPROTO_ICMP && ip->ip_v == IPVERSION)
+    	{
+    		icmp = (struct icmp *)(g_data.packet.recv + (ip->ip_hl << 2));
+    		if (icmp->icmp_type == ICMP_ECHOREPLY &&
+    			icmp->icmp_code == 0 &&
+    			icmp->icmp_id == (uint16_t)getpid())
+    			process_response(bytes);
+    	}
+    	if (g_data.opt.options & OPT_v)
+    		print_verbose();
+    }
+    else if (bytes < 0)
+    {
+        bytes = recvmsg(g_data.socket.fd, &(g_data.packet.msg), MSG_ERRQUEUE);
+        process_response(bytes);
+    }
 	g_data.is_sent = false;
 }
 
@@ -522,8 +506,8 @@ void	main_loop()
 	{
 		if (g_data.is_sent == true)
 		{
-			alarm(g_data.opt.i);
 			recv_icmp();
+    		alarm(g_data.opt.i);
 		}
 		if (g_data.opt.options & OPT_c)
 			g_data.opt.c--;
