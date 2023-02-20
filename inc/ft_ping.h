@@ -16,11 +16,12 @@
 # include <stdbool.h>
 # include <limits.h>
 # include <errno.h>
+# include <float.h>
 # include "libft.h"
 # include <linux/errqueue.h>
 
-# define IPV4_HDRLEN 20
-# define ICMP_HDRLEN 8
+# define IPV4_HDRLEN sizeof(struct iphdr)
+# define ICMP_HDRLEN sizeof(struct icmphdr)
 
 # define OPT_v 1
 # define OPT_h 2
@@ -28,39 +29,8 @@
 # define OPT_n 8
 # define OPT_t 16
 # define OPT_c 32
-# define OPT_i 64
 
-// Reference of functions used
-enum e_function
-{
-	GETADDRINFO = 255,
-	GETNAMEINFO,
-	SOCKET,
-	SETSOCKOPT,
-	SENDTO,
-	RECVMSG,
-	INET_NTOP,
-	INET_PTON
-};
-
-enum e_error_type
-{
-	GENERAL = 1,
-	INTERNAL,
-	FUNCTION
-};
-
-// Error codes
-enum e_error
-{
-	BAD_ALLOCATION
-};
-
-enum e_dest
-{
-	END_POINT,
-	LAST_POINT
-};
+# define PACKET_LOSE (100 - ((g_data.received*1.) / g_data.transmitted) * 100)
 
 typedef struct s_time
 {
@@ -128,12 +98,16 @@ typedef struct s_data
 	t_options			opt;
 	int					sequence;
 	int					is_sent;
+	size_t				transmitted;
+	size_t				received;
+	size_t				errors;
 	char				*target;
-	t_time				recv_time;
-
-	enum e_error_type	type;
-	enum e_error		error;
-	enum e_function		function;
+	struct timeval		start_time;
+	struct timeval		current_time;
+	double				time;
+	double				max_time;
+	double				min_time;
+	double				sum_time;
 }	t_data;
 
 
