@@ -61,25 +61,19 @@ typedef struct s_socket
 	int	fd;
 }	t_socket;
 
+typedef struct	s_queue
+{
+	char			buff[IP_MAXPACKET];
+	char			ctrl[IP_MAXPACKET];
+	struct msghdr	msg;
+	struct iovec	iov;
+}	t_queue;
+
 typedef struct s_packet
 {
-	char			recv[IP_MAXPACKET];
-	char			send[IP_MAXPACKET];
-	char			ctrl[IP_MAXPACKET];
-	struct iovec	iov;
-	struct msghdr	msg;
-	size_t			send_size;
+	char	buff[IP_MAXPACKET];
+	size_t	size;
 }	t_packet;
-
-typedef struct	s_hostname
-{
-	char	buf[256];
-}	t_hostname;
-
-typedef struct	s_presentable
-{
-	char	buf[256];
-}	t_presentable;
 
 typedef struct	s_emsg
 {
@@ -89,13 +83,15 @@ typedef struct	s_emsg
 
 typedef struct s_data
 {
-	t_presentable		presentable;
-	t_hostname			hostname;
 	t_packet			packet;
 	t_socket			socket;
 	t_dest				dest;
 	t_emsg				emsg;
 	t_options			opt;
+	t_queue				equeue;
+	t_queue				nqueue;
+	char				hostname[256];
+	char				presentable[256];
 	int					sequence;
 	int					is_sent;
 	size_t				transmitted;

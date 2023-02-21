@@ -119,7 +119,7 @@ void	parse_options(int nargs, char **args)
 			g_data.target = args[i];
 		i++;
 	}
-	g_data.packet.send_size = ICMP_HDRLEN + g_data.opt.s;
+	g_data.packet.size = ICMP_HDRLEN + g_data.opt.s;
 }
 
 /**
@@ -165,8 +165,8 @@ void	set_presentable(struct in_addr addr)
 {
 	inet_ntop(
 		AF_INET, &addr, 
-		g_data.presentable.buf, 
-		sizeof(g_data.presentable.buf)
+		g_data.presentable, 
+		sizeof(g_data.presentable)
 	);
 }
 
@@ -186,8 +186,8 @@ void	set_hostname(struct in_addr addr)
 	sa = (struct sockaddr *)&sa_in;
 	getnameinfo(
 		sa, sizeof(sa_in), 
-		g_data.hostname.buf, 
-		sizeof(g_data.hostname.buf), 
+		g_data.hostname, 
+		sizeof(g_data.hostname), 
 		NULL, 0, 0
 	);
 }
@@ -212,7 +212,7 @@ void	create_socket()
 	setsockopt(g_data.socket.fd, IPPROTO_IP, IP_TTL, &g_data.opt.t, sizeof(g_data.opt.t));
 	__errno = __errno || errno;
 
-	on = 0;
+	on = 1;
 	setsockopt(g_data.socket.fd, SOL_IP, IP_RECVERR, &on, sizeof(on));
 	__errno = __errno || errno;
 
@@ -304,35 +304,33 @@ void	print_header(void)
 	int payload_size;
 	int total_size;
 
-	payload_size = g_data.packet.send_size - ICMP_HDRLEN;
-	total_size = g_data.packet.send_size + IPV4_HDRLEN;
+	payload_size = g_data.packet.size - ICMP_HDRLEN;
+	total_size = g_data.packet.size + IPV4_HDRLEN;
 	printf("PING %s (%s) %d(%d) bytes of data.\n",
 			g_data.target,
-			g_data.presentable.buf,
+			g_data.presentable,
 			payload_size,
 			total_size);
 }
 
-void	print_error(ssize_t bytes, struct sock_extended_err *error)
+void	print_error(ssize_t bytes, struct sock_extended_err *exterr)
 {
-    struct iphdr        *ip;
 	struct icmphdr		*icmp;
-	struct in_addr  	saddr;
+	struct sockaddr_in  *sin;
 	char				*error_msg;
 
-    ip = (struct iphdr *)(g_data.packet.recv);
-    icmp = (struct icmphdr *)(g_data.packet.recv + (ip->ihl << 2));
-    saddr.s_addr = ip->saddr;
-    set_presentable(saddr);
+	sin = (struct sockaddr_in *)SO_EE_OFFENDER(exterr);
+    icmp = (struct icmphdr *)(g_data.equeue.buff);
+    set_presentable(sin->sin_addr);
     if (g_data.opt.options & OPT_n)
-        printf("From %s ", g_data.presentable.buf);
+        printf("From %s ", g_data.presentable);
     else
     {
-        set_hostname(saddr);
-        printf("From %s (%s) ", g_data.hostname.buf, g_data.presentable.buf);
+        set_hostname(sin->sin_addr);
+        printf("From %s (%s) ", g_data.hostname, g_data.presentable);
     }
-    error_msg = set_packet_error_message(icmp->type, icmp->code);
-    printf("icmp_seq=%d %s\n", g_data.sequence, error_msg);
+    error_msg = set_packet_error_message(exterr->ee_type, exterr->ee_code);
+    printf("icmp_seq=%d %s\n", icmp->un.echo.sequence, error_msg);
 }
 
 void	print_icmp_reply(ssize_t bytes, struct timeval *rtime)
@@ -344,7 +342,7 @@ void	print_icmp_reply(ssize_t bytes, struct timeval *rtime)
 	double			time_diff;
 	struct in_addr	saddr;
 
-    packet = g_data.packet.recv;
+    packet = g_data.nqueue.buff;
     ip = (struct iphdr *)packet;
     icmp = (struct icmphdr *)(packet + (ip->ihl << 2));
 	saddr.s_addr = ip->saddr;
@@ -353,7 +351,7 @@ void	print_icmp_reply(ssize_t bytes, struct timeval *rtime)
 	{
 		printf("%lu bytes from %s: icmp_seq=%d ttl=%d",
 			bytes - ICMP_HDRLEN - IPV4_HDRLEN,
-			g_data.presentable.buf,
+			g_data.presentable,
 			icmp->un.echo.sequence,
 			ip->ttl
 		);
@@ -362,8 +360,8 @@ void	print_icmp_reply(ssize_t bytes, struct timeval *rtime)
 	{
 		printf("%lu bytes from %s (%s): icmp_seq=%d ttl=%d",
 			bytes - IPV4_HDRLEN,
-			g_data.hostname.buf,
-			g_data.presentable.buf,
+			g_data.hostname,
+			g_data.presentable,
 			icmp->un.echo.sequence,
 			ip->ttl);
 	}
@@ -416,37 +414,83 @@ void	print_verbose(void)
 // Function responsible for receiving a response. 
 ////////////////////////////////////////////////////////////////////////////////
 
-void	setup_msghdr(void)
+void	reset_queue(t_queue *queue)
 {
-	ft_memset(g_data.packet.recv, 0x00, sizeof(g_data.packet.recv));
-	ft_memset(g_data.packet.ctrl, 0x00, sizeof(g_data.packet.ctrl));
+	if (queue == &g_data.equeue)
+		ft_memset(queue->buff, 0x00, ICMP_HDRLEN);
+	else
+		ft_memset(queue->buff, 0x00, IP_MAXPACKET);
+	ft_memset(queue->ctrl, 0x00, IP_MAXPACKET);
+	queue->iov = (struct iovec){0};
+	queue->msg = (struct msghdr){0};
+	queue->iov.iov_base = queue->buff;
+	queue->iov.iov_len = IP_MAXPACKET;
+	queue->msg.msg_iov = &(queue->iov);
+	queue->msg.msg_iovlen = 1;
+	queue->msg.msg_control = NULL;
+	queue->msg.msg_controllen = 0;
+	if (queue == &g_data.equeue)
+	{
+		queue->msg.msg_control = queue->ctrl;
+		queue->msg.msg_controllen = IP_MAXPACKET;
+	}
+	queue->msg.msg_iov = &(queue->iov);
+	queue->msg.msg_flags = 0;
+}
 
-    g_data.packet.iov = (struct iovec){0};
-    g_data.packet.msg = (struct msghdr){0};
-	g_data.packet.iov.iov_base = g_data.packet.recv;
-	g_data.packet.iov.iov_len = sizeof(g_data.packet.recv);
-	g_data.packet.msg.msg_iov = &g_data.packet.iov;
-	g_data.packet.msg.msg_iovlen = 1;
-    g_data.packet.msg.msg_flags = 0;
-	g_data.packet.msg.msg_control = g_data.packet.ctrl;
-	g_data.packet.msg.msg_controllen = sizeof(g_data.packet.ctrl);
+ssize_t	attempt_receive(void)
+{
+	ssize_t	bytes;
+
+	bytes = 0;
+	while (true)
+	{
+		reset_queue(&g_data.equeue);
+		reset_queue(&g_data.nqueue);
+		bytes = recvmsg(g_data.socket.fd, &(g_data.equeue.msg), MSG_ERRQUEUE);
+		printf("1: %ld\n", bytes);
+		if (bytes > 0)
+			break ;
+    	bytes = recvmsg(g_data.socket.fd, &(g_data.nqueue.msg), 0);
+		printf("2: %ld\n", bytes);
+		if (bytes > 0)
+			break ;
+		usleep(10);
+	}
+	return bytes;
 }
 
 void	recv_icmp(void)
 {
-    ssize_t         bytes, bbytes;
-	struct iphdr	*ip;
-	struct icmphdr	*icmp;
-	struct timeval	rtime;
+	ssize_t						bytes;
+	struct iphdr				*ip;
+	struct icmphdr				*icmp;
+	struct timeval				rtime;
+	struct cmsghdr				*cmsg;
+	struct sock_extended_err	*exterr;
+	printf("%s\n", __FUNCTION__);
 
-    setup_msghdr();
-    bytes = recvmsg(g_data.socket.fd, &(g_data.packet.msg), 0);
-    gettimeofday(&rtime, 0);
+	bytes = attempt_receive();
+	exterr = NULL;
+	cmsg = CMSG_FIRSTHDR(&g_data.equeue.msg);
+	while (cmsg)
+	{
+		if (cmsg->cmsg_level == SOL_IP && cmsg->cmsg_type == IP_RECVERR)
+			exterr = (struct sock_extended_err *)CMSG_DATA(cmsg);
+		cmsg = CMSG_NXTHDR(&g_data.equeue.msg, cmsg);
+	}
+	if (exterr)
+	{
+		printf("Error\n");
+		g_data.errors++;
+		print_error(bytes, exterr);
+		return ;
+	}
 
-    ip = (struct iphdr *)g_data.packet.recv;
+    ip = (struct iphdr *)g_data.nqueue.buff;
     if (ip->protocol == IPPROTO_ICMP && ip->version == IPVERSION)
     {
-        icmp = (struct icmphdr *)(g_data.packet.recv + (ip->ihl << 2));
+        icmp = (struct icmphdr *)(g_data.nqueue.buff + (ip->ihl << 2));
         if (icmp->type == ICMP_ECHOREPLY)
         {
             if (icmp->code == 0 &&
@@ -455,11 +499,6 @@ void	recv_icmp(void)
                 g_data.received++;
                 print_icmp_reply(bytes, &rtime);
             }
-        }
-        else
-        {
-		    g_data.errors++;
-            print_error(bytes, NULL);
         }
     }
     else if (g_data.opt.options & OPT_v)
@@ -474,8 +513,8 @@ void	setup_send_packet(void)
 {
 	struct icmphdr	*icmp;
 
-	ft_memset(g_data.packet.send, 0x00, sizeof(g_data.packet.send_size));
-	icmp = (struct icmphdr *)g_data.packet.send;
+	ft_memset(g_data.packet.buff, 0x00, sizeof(g_data.packet.size));
+	icmp = (struct icmphdr *)g_data.packet.buff;
 	icmp->type = ICMP_ECHO;
 	icmp->code = 0;
 	icmp->un.echo.id = (uint16_t)getpid();
@@ -483,19 +522,20 @@ void	setup_send_packet(void)
 	if (g_data.opt.s >= sizeof(struct timeval))
 		gettimeofday((void *)(icmp + 1), 0);
 	icmp->checksum = 0;
-	icmp->checksum = calc_checksum((uint16_t *)icmp, g_data.packet.send_size);
+	icmp->checksum = calc_checksum((uint16_t *)icmp, g_data.packet.size);
 }
 
 void	send_icmp(void)
 {
 	int	ret;
 
+	printf("%s\n", __FUNCTION__);
 	setup_send_packet();
 	ret = sendto(
 		g_data.socket.fd, 
-		g_data.packet.send, 
-		g_data.packet.send_size, 
-		0, 
+		g_data.packet.buff, 
+		g_data.packet.size, 
+		MSG_DONTWAIT, 
 		g_data.dest.sa, 
 		g_data.dest.ai.ai_addrlen
 	);
@@ -509,10 +549,11 @@ void	sig_handler(int sig)
 {
 	if (sig == SIGALRM)
 	{
-		g_data.is_sent = false;
-		g_data.current_time = (struct timeval){0};
-		gettimeofday(&g_data.current_time, 0);
-		g_data.time += get_time_diff(&g_data.start_time, &g_data.current_time);
+		send_icmp();
+		g_data.is_sent = true;
+		// g_data.current_time = (struct timeval){0};
+		// gettimeofday(&g_data.current_time, 0);
+		// g_data.time += get_time_diff(&g_data.start_time, &g_data.current_time);
 	}
 	else if (sig == SIGINT)
 	{
@@ -529,23 +570,22 @@ void	main_loop()
 	signal(SIGINT, sig_handler);
 	signal(SIGQUIT, sig_handler);
 	setup_icmp_msgs();
-	setup_msghdr();
 	print_header();
-	g_data.is_sent = false;
+	sig_handler(SIGALRM);
 	while (g_data.opt.c)
 	{
-		if (g_data.is_sent == false)
+		if (g_data.is_sent == true)
 		{
-    		alarm(g_data.opt.i);
-			g_data.start_time = (struct timeval){0};
-			gettimeofday(&g_data.start_time, 0);
-			send_icmp();
+			// g_data.start_time = (struct timeval){0};
+			// gettimeofday(&g_data.start_time, 0);
 			recv_icmp();
-			g_data.is_sent = true;
+    		alarm(g_data.opt.i);
+			g_data.is_sent = false;
 		}
 		if (g_data.opt.options & OPT_c)
 			g_data.opt.c--;
 	}
+	usleep(10);
 	print_stats();
 }
 
