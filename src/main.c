@@ -2,13 +2,6 @@
 
 t_data g_data = {0};
 
-/**
- * @brief Get the checksum of the sent and received packets
- * 
- * @param buffer 
- * @param size 
- * @return uint16_t 
- */
 uint16_t	calc_checksum(uint16_t *buffer, size_t size)
 {
 	size_t		count;
@@ -28,12 +21,7 @@ uint16_t	calc_checksum(uint16_t *buffer, size_t size)
 	return (~checksum);
 }
 
-/**
- * @brief print program usage
- * 
- * @param __exit 
- * @param exit_code 
- */
+
 void usage(int __exit, int exit_code)
 {
 	printf("\nUsage\n  ping [options] <destination>\n");
@@ -50,13 +38,7 @@ void usage(int __exit, int exit_code)
 		exit(exit_code);
 }
 
-/**
- * @brief parse arguments and store the result
- * in t_options structure
- * 
- * @param nargs 
- * @param args 
- */
+
 void	parse_options(int nargs, char **args)
 {
 	int	i;
