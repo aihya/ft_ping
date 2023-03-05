@@ -160,6 +160,7 @@ void	set_hostname(struct in_addr addr)
 	sa_in.sin_family = AF_INET;
 	sa_in.sin_addr = addr;
 	sa = (struct sockaddr *)&sa_in;
+	ft_memset(g_data.hostname, 0x00, sizeof(g_data.hostname));
 	getnameinfo(
 		sa, sizeof(sa_in), 
 		g_data.hostname, 
