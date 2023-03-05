@@ -262,15 +262,32 @@ double	get_time_diff(struct timeval *stime, struct timeval *rtime)
 	return (time);
 }
 
-void	print_rtt()
-{
-	double	mdev_time;
 
-	printf("min/avg/max/mdev = %.3lf/%.3lf/%.3lf/%.3lf ms",
-		g_data.min_time,
-		g_data.sum_time / g_data.received,
-		g_data.max_time,
-		mdev_time);
+void	add_time(struct timeval send, struct timeval recv)
+{
+	t_time	*time;
+
+	time = (t_time *)calloc(1, sizeof(t_time));
+	time->send = send;
+	time->recv = recv;
+	if (g_data.stt.rtt.tail)
+	{
+		g_data.stt.rtt.tail->next = time;
+		g_data.stt.rtt.tail = g_data.stt.rtt.tail->next;
+	}
+	else
+	{
+		g_data.stt.rtt.head = time;
+		g_data.stt.rtt.tail = g_data.stt.rtt.head;
+	}
+}
+
+void	calculate_ewma(t_time *rtt)
+{
+	double	diff;
+
+	diff = get_time_diff(&rtt->send, &rtt->recv);
+	g_data.stt.rtt.ewma = 0.507 * diff + (1 - 0.507) * g_data.stt.rtt.ewma;
 }
 
 void	print_header(void)
