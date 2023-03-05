@@ -467,25 +467,13 @@ void	print_stats()
 
 void	reset_queue(t_queue *queue)
 {
-	if (queue == &g_data.equeue)
-		ft_memset(queue->buff, 0x00, ICMP_HDRLEN);
-	else
-		ft_memset(queue->buff, 0x00, IP_MAXPACKET);
-	ft_memset(queue->ctrl, 0x00, IP_MAXPACKET);
+	ft_memset(queue->buff, 0x00, IP_MAXPACKET);
 	queue->iov = (struct iovec){0};
 	queue->msg = (struct msghdr){0};
 	queue->iov.iov_base = queue->buff;
 	queue->iov.iov_len = IP_MAXPACKET;
 	queue->msg.msg_iov = &(queue->iov);
 	queue->msg.msg_iovlen = 1;
-	queue->msg.msg_control = NULL;
-	queue->msg.msg_controllen = 0;
-	if (queue == &g_data.equeue)
-	{
-		queue->msg.msg_control = queue->ctrl;
-		queue->msg.msg_controllen = IP_MAXPACKET;
-	}
-	queue->msg.msg_iov = &(queue->iov);
 	queue->msg.msg_flags = 0;
 }
 
