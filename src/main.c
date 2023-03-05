@@ -477,27 +477,6 @@ void	reset_queue(t_queue *queue)
 	queue->msg.msg_flags = 0;
 }
 
-ssize_t	attempt_receive(void)
-{
-	ssize_t	bytes;
-
-	bytes = 0;
-	while (true)
-	{
-		reset_queue(&g_data.equeue);
-		reset_queue(&g_data.nqueue);
-		bytes = recvmsg(g_data.socket.fd, &(g_data.equeue.msg), MSG_ERRQUEUE);
-		printf("1: %ld\n", bytes);
-		if (bytes > 0)
-			break ;
-    	bytes = recvmsg(g_data.socket.fd, &(g_data.nqueue.msg), 0);
-		printf("2: %ld\n", bytes);
-		if (bytes > 0)
-			break ;
-		usleep(10);
-	}
-	return bytes;
-}
 
 void	recv_icmp(void)
 {
@@ -505,43 +484,43 @@ void	recv_icmp(void)
 	struct iphdr				*ip;
 	struct icmphdr				*icmp;
 	struct timeval				rtime;
-	struct cmsghdr				*cmsg;
-	struct sock_extended_err	*exterr;
-	printf("%s\n", __FUNCTION__);
+	static bool					first_recv = true;
 
-	bytes = attempt_receive();
-	exterr = NULL;
-	cmsg = CMSG_FIRSTHDR(&g_data.equeue.msg);
-	while (cmsg)
+	if (first_recv)
 	{
-		if (cmsg->cmsg_level == SOL_IP && cmsg->cmsg_type == IP_RECVERR)
-			exterr = (struct sock_extended_err *)CMSG_DATA(cmsg);
-		cmsg = CMSG_NXTHDR(&g_data.equeue.msg, cmsg);
+		gettimeofday(&g_data.start_time, 0);
+		first_recv = false;
 	}
-	if (exterr)
-	{
-		printf("Error\n");
-		g_data.errors++;
-		print_error(bytes, exterr);
+
+	// Receive a response and track the receive time
+	reset_queue(&g_data.queue);
+	bytes = recvmsg(g_data.socket.fd, &(g_data.queue.msg), 0);
+	gettimeofday(&rtime, 0);
+	if (bytes <= 0)
 		return ;
-	}
 
-    ip = (struct iphdr *)g_data.nqueue.buff;
+    ip = (struct iphdr *)g_data.queue.buff;
     if (ip->protocol == IPPROTO_ICMP && ip->version == IPVERSION)
     {
-        icmp = (struct icmphdr *)(g_data.nqueue.buff + (ip->ihl << 2));
+        icmp = (struct icmphdr *)(g_data.queue.buff + (ip->ihl << 2));
         if (icmp->type == ICMP_ECHOREPLY)
         {
-            if (icmp->code == 0 &&
-                icmp->un.echo.id == (uint16_t)getpid())
+            if (icmp->code == 0 && icmp->un.echo.id == (uint16_t)getpid())
             {
-                g_data.received++;
+				g_data.stt.pkt.nrecv++;
                 print_icmp_reply(bytes, &rtime);
             }
         }
+		else
+		{
+			g_data.stt.pkt.nerrs++;
+			print_error(bytes);
+		}
     }
-    else if (g_data.opt.options & OPT_v)
-        print_verbose();
+	else if (g_data.opt.options & OPT_v)
+		print_verbose();
+	if (g_data.opt.c != -1)
+		g_data.opt.c--;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
