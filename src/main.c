@@ -618,16 +618,25 @@ int main(int argc, char **argv)
 {
 	parse_options(argc-1, argv+1);
 	get_addrinfo();
-	set_presentable(g_data.dest.sin->sin_addr);
+	set_presentable(
+		g_data.dest.sin->sin_addr, 
+		g_data.presentable, 
+		sizeof(g_data.presentable)
+	);
 	set_hostname(g_data.dest.sin->sin_addr);
 	create_socket();
-	g_data.transmitted = 0;
-	g_data.received = 0;
-	g_data.errors = 0;
-	g_data.min_time = DBL_MAX;
-	g_data.max_time = 0;
-	g_data.sum_time = 0;
-	g_data.time = 0;
+
+	g_data.sequence = 1;
+	g_data.stt.pkt.nsent = 0;
+	g_data.stt.pkt.nrecv = 0;
+	g_data.stt.pkt.nerrs = 0;
+	g_data.stt.rtt.min_time = DBL_MAX;
+	g_data.stt.rtt.max_time = 0;
+	g_data.stt.rtt.sum_time = 0;
+	g_data.stt.rtt.ewma = 0;
+	g_data.stt.rtt.mdev = 0;
+	g_data.stt.rtt.total_time = 0;
+	
 	main_loop();
 	return (0);
 }
