@@ -423,37 +423,42 @@ void	print_icmp_reply(ssize_t bytes, struct timeval *rtime)
 	printf("\n");
 }
 
+
 void	print_current_stats()
 {
-	printf("\r%ld/%ld packets", g_data.received, g_data.transmitted);
-	printf(", %ld%%", (size_t)PACKET_LOSE);
-	if (g_data.received)
+	printf("\r%ld/%ld packets", g_data.stt.pkt.nrecv, g_data.stt.pkt.nsent);
+	printf(", %ld%%", (size_t)LOSS);
+	if (g_data.stt.pkt.nrecv && g_data.stt.rtt.head)
 	{
-		printf(", ");
-		print_rtt();
+		printf(", min/avg/ewma/max = %.3lf/%.3lf/%.3lf/%.3lf ms",
+			g_data.stt.rtt.min_time,
+			g_data.stt.rtt.sum_time / g_data.stt.pkt.nrecv,
+			g_data.stt.rtt.ewma,
+			g_data.stt.rtt.max_time
+		);
 	}
 	printf("\n");
 }
 
+
 void	print_stats()
 {
 	printf("\n--- %s ping statistics ---\n", g_data.target);
-	printf("%ld packets transmitted, %ld received", g_data.transmitted, g_data.received);
-	if (g_data.errors)
-		printf(", +%ld errors", g_data.errors);
-	printf(", %ld%% packet loss", (size_t)PACKET_LOSE);
-	printf(", time %.lfms", g_data.time);
-	if (g_data.received)
+	printf("%ld packets transmitted, %ld received", g_data.stt.pkt.nsent, g_data.stt.pkt.nrecv);
+	if (g_data.stt.pkt.nerrs)
+		printf(", +%ld errors", g_data.stt.pkt.nerrs);
+	printf(", %lu%% packet loss", (size_t)LOSS);
+	printf(", time %.lfms", g_data.stt.rtt.total_time);
+	if (g_data.stt.pkt.nrecv && g_data.stt.rtt.head)
 	{
-		printf("\nrtt ");
-		print_rtt();
+		printf("\nrtt min/avg/max/mdev = %.3lf/%.3lf/%.3lf/%.3lf ms",
+			g_data.stt.rtt.min_time,
+			g_data.stt.rtt.sum_time / g_data.stt.pkt.nrecv,
+			g_data.stt.rtt.max_time,
+			g_data.stt.rtt.mdev
+		);
 	}
-	printf("\n\n");
-}
-
-void	print_verbose(void)
-{
-
+	printf("\n");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
