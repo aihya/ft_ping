@@ -238,20 +238,19 @@ static char *set_time_exceeded(int code)
     return (NULL);
 }
 
+
 // TODO: manage option -v in else
 char    *set_packet_error_message(int type, int code)
 {
-	if (type == 3)
+	if (type == ICMP_DEST_UNREACH)
 		return (set_destination_unreachable(code));
-	else if (type == 11)
-	{
+	else if (type == ICMP_TIME_EXCEEDED)
 		return (set_time_exceeded(code));
-	}
     return (NULL);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Function responsible for printing the errrors and valid icmp reply.
+// Function responsible for tracking time.
 ////////////////////////////////////////////////////////////////////////////////
 
 double	get_time_diff(struct timeval *stime, struct timeval *rtime)
