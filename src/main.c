@@ -344,40 +344,48 @@ void	print_header(void)
 			total_size);
 }
 
-void	print_error(ssize_t bytes, struct sock_extended_err *exterr)
-{
-	struct icmphdr		*icmp;
-	struct sockaddr_in  *sin;
-	char				*error_msg;
 
-	sin = (struct sockaddr_in *)SO_EE_OFFENDER(exterr);
-    icmp = (struct icmphdr *)(g_data.equeue.buff);
-    set_presentable(sin->sin_addr);
+void	print_error(ssize_t bytes)
+{
+	struct iphdr		*ip, *oip;
+	struct icmphdr		*icmp, *oicmp;
+	struct in_addr		saddr;
+	char				*error;
+
+	ip    = (struct iphdr   *)(g_data.queue.buff);
+    icmp  = (struct icmphdr *)(g_data.queue.buff + (ip->ihl<<2));
+	oip   = (struct iphdr   *)(g_data.queue.buff + (ip->ihl<<2) + sizeof(icmp));
+	oicmp = (struct icmphdr *)(g_data.queue.buff + (ip->ihl<<2) + ICMP_HDRLEN + (oip->ihl<<2));
+	if (oicmp->un.echo.id != (uint16_t)getpid())
+		return ;
+	saddr.s_addr = ip->saddr;
+    set_presentable(saddr, g_data.presentable, sizeof(g_data.presentable));
     if (g_data.opt.options & OPT_n)
         printf("From %s ", g_data.presentable);
     else
     {
-        set_hostname(sin->sin_addr);
+        set_hostname(saddr);
         printf("From %s (%s) ", g_data.hostname, g_data.presentable);
     }
-    error_msg = set_packet_error_message(exterr->ee_type, exterr->ee_code);
-    printf("icmp_seq=%d %s\n", icmp->un.echo.sequence, error_msg);
+    error = set_packet_error_message(icmp->type, icmp->code);
+    printf("icmp_seq=%d %s\n", oicmp->un.echo.sequence, error);
 }
+
 
 void	print_icmp_reply(ssize_t bytes, struct timeval *rtime)
 {
     struct iphdr	*ip;
     struct icmphdr	*icmp;
-    char			*packet;
     struct timeval	*stime;
-	double			time_diff;
 	struct in_addr	saddr;
+	double			time_diff;
+    char			*packet;
 
-    packet = g_data.nqueue.buff;
+    packet = g_data.queue.buff;
     ip = (struct iphdr *)packet;
     icmp = (struct icmphdr *)(packet + (ip->ihl << 2));
 	saddr.s_addr = ip->saddr;
-	set_presentable(saddr);
+	set_presentable(saddr, g_data.presentable, sizeof(g_data.presentable));
 	if (g_data.opt.options & OPT_n)
 	{
 		printf("%lu bytes from %s: icmp_seq=%d ttl=%d",
@@ -396,13 +404,20 @@ void	print_icmp_reply(ssize_t bytes, struct timeval *rtime)
 			icmp->un.echo.sequence,
 			ip->ttl);
 	}
-	if (g_data.opt.s >= sizeof(struct timeval))
+	if (ft_ntohs(ip->tot_len) - IPV4_HDRLEN < g_data.packet.size)
+		printf(" (truncated)");
+	else if (g_data.opt.s >= sizeof(struct timeval))
 	{
 		stime = (struct timeval *)(icmp + 1);
 		time_diff = get_time_diff(stime, rtime);
-		g_data.max_time = time_diff >= g_data.max_time ? time_diff : g_data.max_time;
-		g_data.min_time = time_diff <= g_data.min_time ? time_diff : g_data.min_time;
-		g_data.sum_time += time_diff;
+		if (time_diff >= g_data.stt.rtt.max_time)
+			g_data.stt.rtt.max_time = time_diff;
+		if (time_diff <= g_data.stt.rtt.min_time)
+			g_data.stt.rtt.min_time = time_diff;
+		g_data.stt.rtt.sum_time += time_diff;
+		add_time(*stime, *rtime);
+		calculate_mdev();
+		calculate_ewma(g_data.stt.rtt.tail);
 		printf(" time=%.1f ms", time_diff);
 	}
 	printf("\n");
