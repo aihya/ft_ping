@@ -104,10 +104,15 @@ void	parse_options(int nargs, char **args)
 	g_data.packet.size = ICMP_HDRLEN + g_data.opt.s;
 }
 
-/**
- * @brief Get the addrinfo object
- * 
- */
+
+uint16_t	ft_ntohs(uint16_t dword)
+{
+	if (__BYTE_ORDER == __LITTLE_ENDIAN)
+		return (dword << 8) | (dword >> 8);
+	return dword;
+}
+
+
 void	get_addrinfo()
 {
 	struct addrinfo	hints;
