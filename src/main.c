@@ -543,35 +543,47 @@ void	setup_send_packet(void)
 	icmp->checksum = calc_checksum((uint16_t *)icmp, g_data.packet.size);
 }
 
+
 void	send_icmp(void)
 {
 	int	ret;
 
-	printf("%s\n", __FUNCTION__);
 	setup_send_packet();
 	ret = sendto(
 		g_data.socket.fd, 
 		g_data.packet.buff, 
 		g_data.packet.size, 
-		MSG_DONTWAIT, 
+		0, 
 		g_data.dest.sa, 
 		g_data.dest.ai.ai_addrlen
 	);
 	if (ret)
-		g_data.transmitted++;
+	{
+		g_data.stt.pkt.nsent++;
+		g_data.sequence++;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void	sig_handler(int sig)
 {
+	static bool	first_send = true;
+
 	if (sig == SIGALRM)
 	{
 		send_icmp();
-		g_data.is_sent = true;
-		// g_data.current_time = (struct timeval){0};
-		// gettimeofday(&g_data.current_time, 0);
-		// g_data.time += get_time_diff(&g_data.start_time, &g_data.current_time);
+		if (!first_send)
+		{
+			gettimeofday(&g_data.current_time, 0);
+			g_data.stt.rtt.total_time += get_time_diff(
+				&g_data.start_time, 
+				&g_data.current_time
+			);
+			gettimeofday(&g_data.start_time, 0);
+		}
+		first_send = false;
+		alarm(g_data.opt.i);
 	}
 	else if (sig == SIGINT)
 	{
@@ -589,21 +601,16 @@ void	main_loop()
 	signal(SIGQUIT, sig_handler);
 	setup_icmp_msgs();
 	print_header();
+	g_data.start_time = (struct timeval){0};
+	g_data.current_time = (struct timeval){0};
+
 	sig_handler(SIGALRM);
 	while (g_data.opt.c)
 	{
-		if (g_data.is_sent == true)
-		{
-			// g_data.start_time = (struct timeval){0};
-			// gettimeofday(&g_data.start_time, 0);
-			recv_icmp();
-    		alarm(g_data.opt.i);
-			g_data.is_sent = false;
-		}
-		if (g_data.opt.options & OPT_c)
-			g_data.opt.c--;
+		recv_icmp();
+		usleep(10);
 	}
-	usleep(10);
+
 	print_stats();
 }
 
