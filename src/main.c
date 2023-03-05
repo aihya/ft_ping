@@ -137,32 +137,21 @@ void	get_addrinfo()
 			p->ai_protocol == IPPROTO_ICMP)
 			break ;
 	}
-	g_data.dest.ai = *p;
+	ft_memcpy(&g_data.dest.ai, p, sizeof(g_data.dest.ai));
 	g_data.dest.sa = g_data.dest.ai.ai_addr;
-	g_data.dest.sin = (struct sockaddr_in *)g_data.dest.sa;
-	freeaddrinfo(result);
+	g_data.dest.sin = (struct sockaddr_in *)(g_data.dest.sa);
+	// freeaddrinfo(result);
 }
 
-/**
- * @brief Set the presentable buffer
- * 
- * @param addr 
- */
-void	set_presentable(struct in_addr addr)
+
+char	*set_presentable(struct in_addr addr, char *buffer, size_t size)
 {
-	inet_ntop(
-		AF_INET, &addr, 
-		g_data.presentable, 
-		sizeof(g_data.presentable)
-	);
+	ft_memset(buffer, 0x00, size);
+	inet_ntop(AF_INET, &addr, buffer, size);
+	return buffer;
 }
 
-/**
- * @brief Set the hostname object of the responding source
- * 
- * @param buffer 
- * @param addr_in 
- */
+
 void	set_hostname(struct in_addr addr)
 {
 	struct sockaddr_in	sa_in;
