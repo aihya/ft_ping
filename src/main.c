@@ -531,12 +531,12 @@ void	setup_send_packet(void)
 {
 	struct icmphdr	*icmp;
 
-	ft_memset(g_data.packet.buff, 0x00, sizeof(g_data.packet.size));
+	ft_memset(g_data.packet.buff, 0x00, g_data.packet.size);
 	icmp = (struct icmphdr *)g_data.packet.buff;
 	icmp->type = ICMP_ECHO;
 	icmp->code = 0;
 	icmp->un.echo.id = (uint16_t)getpid();
-	icmp->un.echo.sequence = ++g_data.sequence;
+	icmp->un.echo.sequence = g_data.sequence;
 	if (g_data.opt.s >= sizeof(struct timeval))
 		gettimeofday((void *)(icmp + 1), 0);
 	icmp->checksum = 0;
