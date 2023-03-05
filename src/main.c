@@ -169,10 +169,10 @@ void	set_hostname(struct in_addr addr)
 	);
 }
 
+
 void	create_socket()
 {	
 	struct timeval	tv;
-	int				on;
 	int				__errno;
 
 	g_data.socket.fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
@@ -187,10 +187,6 @@ void	create_socket()
 	__errno = errno;
 
 	setsockopt(g_data.socket.fd, IPPROTO_IP, IP_TTL, &g_data.opt.t, sizeof(g_data.opt.t));
-	__errno = __errno || errno;
-
-	on = 1;
-	setsockopt(g_data.socket.fd, SOL_IP, IP_RECVERR, &on, sizeof(on));
 	__errno = __errno || errno;
 
 	if (__errno)
@@ -226,12 +222,14 @@ void	setup_icmp_msgs(void)
 	g_data.emsg._11[1] = "Fragment reassembly time exceeded";
 }
 
+
 static char *set_destination_unreachable(int code)
 {
 	if (code >= 0 && code <= 15)
 		return (g_data.emsg._0[code]);
 	return (NULL);
 }
+
 
 static char *set_time_exceeded(int code)
 {
