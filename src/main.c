@@ -290,6 +290,46 @@ void	calculate_ewma(t_time *rtt)
 	g_data.stt.rtt.ewma = 0.507 * diff + (1 - 0.507) * g_data.stt.rtt.ewma;
 }
 
+void	calculate_mdev()
+{
+	double	mdev;
+	double	mean;
+
+	mdev = 0.0;
+	mean = g_data.stt.rtt.sum_time / g_data.stt.pkt.nrecv;
+	for (t_time *rtt = g_data.stt.rtt.head; rtt; rtt = rtt->next)
+		mdev += sqrt(fabs(mean - get_time_diff(&rtt->send, &rtt->recv)));
+	g_data.stt.rtt.mdev = mdev / g_data.stt.pkt.nrecv;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Function responsible for printing the errrors and valid icmp reply.
+////////////////////////////////////////////////////////////////////////////////
+
+void	print_verbose(void)
+{
+	struct iphdr	*ip;
+	char			buffer[sizeof "255.255.255.255"];
+	struct in_addr	addr;
+
+	ip = (struct iphdr *)g_data.queue.buff;
+	printf("Vr HL TOS  Len   ID Flg  off TTL Pro  cks            Src          Dst\n");
+    printf(" %1x  %1x  %02x %04x %04x", ip->version,
+                                        ip->ihl,
+                                        ip->tos,
+                                    	ip->tot_len,
+                                        ip->id);
+	printf(" %3x %04x", ip->frag_off >> 13, ip->frag_off << 3 >> 3);
+	printf("  %2x  %2x %4x", ip->ttl, ip->protocol, ip->check);
+
+	addr.s_addr = ip->saddr;
+	printf(" %s", set_presentable(addr, buffer, sizeof(buffer)));
+
+	addr.s_addr = ip->daddr;
+	printf(" %s\n", set_presentable(addr, buffer, sizeof(buffer)));
+}
+
+
 void	print_header(void)
 {
 	int payload_size;
