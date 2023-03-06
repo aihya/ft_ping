@@ -144,11 +144,11 @@ void	get_addrinfo()
 }
 
 
-char	*set_presentable(struct in_addr addr, char *buffer, size_t size)
+char	*set_presentable(struct in_addr addr)
 {
-	ft_memset(buffer, 0x00, size);
-	inet_ntop(AF_INET, &addr, buffer, size);
-	return buffer;
+	ft_memset(g_data.presentable, 0x00, sizeof(g_data.presentable));
+	inet_ntop(AF_INET, &addr, g_data.presentable, sizeof(g_data.presentable));
+	return g_data.presentable;
 }
 
 
@@ -282,10 +282,12 @@ void	add_time(struct timeval send, struct timeval recv)
 	}
 }
 
-void	calculate_ewma(t_time *rtt)
+void	calculate_ewma()
 {
 	double	diff;
+	t_time	*rtt;
 
+	rtt = g_data.stt.rtt.tail;
 	diff = get_time_diff(&rtt->send, &rtt->recv);
 	g_data.stt.rtt.ewma = 0.507 * diff + (1 - 0.507) * g_data.stt.rtt.ewma;
 }
@@ -309,7 +311,6 @@ void	calculate_mdev()
 void	print_verbose(void)
 {
 	struct iphdr	*ip;
-	char			buffer[sizeof "255.255.255.255"];
 	struct in_addr	addr;
 
 	ip = (struct iphdr *)g_data.queue.buff;
@@ -323,10 +324,10 @@ void	print_verbose(void)
 	printf("  %2x  %2x %4x", ip->ttl, ip->protocol, ip->check);
 
 	addr.s_addr = ip->saddr;
-	printf(" %s", set_presentable(addr, buffer, sizeof(buffer)));
+	printf(" %s", set_presentable(addr));
 
 	addr.s_addr = ip->daddr;
-	printf(" %s\n", set_presentable(addr, buffer, sizeof(buffer)));
+	printf(" %s\n", set_presentable(addr));
 }
 
 
@@ -345,12 +346,12 @@ void	print_header(void)
 }
 
 
-void	print_error(ssize_t bytes)
+void	print_error()
 {
-	struct iphdr		*ip, *oip;
-	struct icmphdr		*icmp, *oicmp;
-	struct in_addr		saddr;
-	char				*error;
+	struct iphdr	*ip, *oip;
+	struct icmphdr	*icmp, *oicmp;
+	struct in_addr	saddr;
+	char			*error;
 
 	ip    = (struct iphdr   *)(g_data.queue.buff);
     icmp  = (struct icmphdr *)(g_data.queue.buff + (ip->ihl<<2));
@@ -359,7 +360,7 @@ void	print_error(ssize_t bytes)
 	if (oicmp->un.echo.id != (uint16_t)getpid())
 		return ;
 	saddr.s_addr = ip->saddr;
-    set_presentable(saddr, g_data.presentable, sizeof(g_data.presentable));
+    set_presentable(saddr);
     if (g_data.opt.options & OPT_n)
         printf("From %s ", g_data.presentable);
     else
@@ -385,7 +386,7 @@ void	print_icmp_reply(ssize_t bytes, struct timeval *rtime)
     ip = (struct iphdr *)packet;
     icmp = (struct icmphdr *)(packet + (ip->ihl << 2));
 	saddr.s_addr = ip->saddr;
-	set_presentable(saddr, g_data.presentable, sizeof(g_data.presentable));
+	set_presentable(saddr);
 	if (g_data.opt.options & OPT_n)
 	{
 		printf("%lu bytes from %s: icmp_seq=%d ttl=%d",
@@ -406,7 +407,7 @@ void	print_icmp_reply(ssize_t bytes, struct timeval *rtime)
 	}
 	if (ft_ntohs(ip->tot_len) - IPV4_HDRLEN < g_data.packet.size)
 		printf(" (truncated)");
-	else if (g_data.opt.s >= sizeof(struct timeval))
+	else if ((size_t)g_data.opt.s >= sizeof(struct timeval))
 	{
 		stime = (struct timeval *)(icmp + 1);
 		time_diff = get_time_diff(stime, rtime);
@@ -417,7 +418,7 @@ void	print_icmp_reply(ssize_t bytes, struct timeval *rtime)
 		g_data.stt.rtt.sum_time += time_diff;
 		add_time(*stime, *rtime);
 		calculate_mdev();
-		calculate_ewma(g_data.stt.rtt.tail);
+		calculate_ewma();
 		printf(" time=%.1f ms", time_diff);
 	}
 	printf("\n");
@@ -537,7 +538,7 @@ void	setup_send_packet(void)
 	icmp->code = 0;
 	icmp->un.echo.id = (uint16_t)getpid();
 	icmp->un.echo.sequence = g_data.sequence;
-	if (g_data.opt.s >= sizeof(struct timeval))
+	if ((size_t)g_data.opt.s >= sizeof(struct timeval))
 		gettimeofday((void *)(icmp + 1), 0);
 	icmp->checksum = 0;
 	icmp->checksum = calc_checksum((uint16_t *)icmp, g_data.packet.size);
@@ -618,11 +619,7 @@ int main(int argc, char **argv)
 {
 	parse_options(argc-1, argv+1);
 	get_addrinfo();
-	set_presentable(
-		g_data.dest.sin->sin_addr, 
-		g_data.presentable, 
-		sizeof(g_data.presentable)
-	);
+	set_presentable(g_data.dest.sin->sin_addr);
 	set_hostname(g_data.dest.sin->sin_addr);
 	create_socket();
 
