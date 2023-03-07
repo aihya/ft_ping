@@ -30,7 +30,6 @@ void usage(int __exit, int exit_code)
 	printf("  -h                 print help and exit\n");
 	printf("  -v                 verbose output\n");
 	printf("  -n                 no dns name resolution\n");
-	printf("  -i <interval>      seconds between sending each packet\n");
 	printf("  -s <size>          use <size> as number of data bytes to be sent\n");
 	printf("  -t <ttl>           define time to live\n");
 	printf("  -c <count>         stop after <count> replies\n");
@@ -65,8 +64,8 @@ void	parse_options(int nargs, char **args)
 				i += 2;
 				continue;
 			}
-			printf("Invalid option %s\n", args[i]);
-			exit(1);
+			printf("ping: option requires an argument '%s'\n", args[i]);
+			usage(true, 1);
 		}
 		else if (!ft_strcmp("-s", args[i]))
 		{
@@ -77,8 +76,8 @@ void	parse_options(int nargs, char **args)
 				i += 2;
 				continue;
 			}
-			printf("Invalid option %s\n", args[i]);
-			exit(1);
+			printf("ping: option requires an argument '%s'\n", args[i]);
+			usage(true, 1);
 		}
 		else if (!ft_strcmp("-c", args[i]))
 		{
@@ -89,13 +88,13 @@ void	parse_options(int nargs, char **args)
 				i += 2;
 				continue;
 			}
-			printf("Invalid option %s\n", args[i]);
-			exit(1);
+			printf("ping: option requires an argument '%s'\n", args[i]);
+			usage(true, 1);
 		}
 		else if (args[i][0] == '-')
 		{
-			printf("Invalid option %s\n", args[i]);
-			exit(1);
+			printf("ping: invalid option -- '%s'\n", args[i]);
+			usage(true, 1);
 		}
 		else
 			g_data.target = args[i];
