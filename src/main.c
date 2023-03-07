@@ -652,6 +652,8 @@ int main(int argc, char **argv)
 	get_addrinfo();
 	set_presentable(g_data.dest.sin->sin_addr);
 	set_hostname(g_data.dest.sin->sin_addr);
+	if (!ft_strcmp(g_data.presentable, g_data.target))
+		g_data.opt.options |= OPT_n;
 	create_socket();
 
 	g_data.sequence = 1;
@@ -666,5 +668,6 @@ int main(int argc, char **argv)
 	g_data.stt.rtt.total_time = 0;
 	
 	main_loop();
+	freeaddrinfo(g_data.dest.result);
 	return (0);
 }
