@@ -524,17 +524,17 @@ void	recv_icmp(void)
 		first_recv = false;
 	}
 
-	// Receive a response and track the receive time
 	reset_queue(&g_data.queue);
-	bytes = recvmsg(g_data.socket.fd, &(g_data.queue.msg), 0);
+	do {
+		bytes = recvmsg(g_data.socket.fd, &(g_data.queue.msg), 0);
+	} while (bytes < 0);
+	
 	gettimeofday(&rtime, 0);
-	if (bytes <= 0)
-		return ;
 
     ip = (struct iphdr *)g_data.queue.buff;
     if (ip->protocol == IPPROTO_ICMP && ip->version == IPVERSION)
     {
-        icmp = (struct icmphdr *)(g_data.queue.buff + (ip->ihl << 2));
+        icmp = (struct icmphdr *)(g_data.queue.buff + (ip->ihl<<2));
         if (icmp->type == ICMP_ECHOREPLY)
         {
             if (icmp->code == 0 && icmp->un.echo.id == (uint16_t)getpid())
