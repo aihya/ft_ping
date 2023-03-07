@@ -200,22 +200,26 @@ void	create_socket()
 
 void	setup_icmp_msgs(void)
 {
-	g_data.emsg._0[0] = "Destination network unreachable";
-	g_data.emsg._0[1] = "Destination host unreachable";
-	g_data.emsg._0[2] = "Destination protocol unreachable";
-	g_data.emsg._0[3] = "Destination port unreachable";
-	g_data.emsg._0[4] = "Fragmentation required, and DF flag set";
-	g_data.emsg._0[5] = "Source route failed";
-	g_data.emsg._0[6] = "Destination network unknown";
-	g_data.emsg._0[7] = "Destination host unknown";
-	g_data.emsg._0[8] = "Source host isolated";
-	g_data.emsg._0[9] = "Network administratively prohibited";
-	g_data.emsg._0[10] = "Host administratively prohibited";
-	g_data.emsg._0[11] = "Network unreachable for ToS";
-	g_data.emsg._0[12] = "Host unreachable for ToS";
-	g_data.emsg._0[13] = "Communication administratively prohibited";
-	g_data.emsg._0[14] = "Host Precedence Violation";
-	g_data.emsg._0[15] = "Precedence cutoff in effect";
+	g_data.emsg._0[0] = "Destination Net Unreachable";
+	g_data.emsg._0[1] = "Destination Host Unreachable";
+	g_data.emsg._0[2] = "Destination Protocol Unreachable";
+	g_data.emsg._0[3] = "Destination Port Unreachable";
+	g_data.emsg._0[4] = "Frag needed and DF set (mtu = %u)";
+	g_data.emsg._0[5] = "Source Route Failed";
+	g_data.emsg._0[6] = "Destination Net Unknown";
+	g_data.emsg._0[7] = "Destination Host Unknown";
+	g_data.emsg._0[8] = "Source Host Isolated";
+	g_data.emsg._0[9] = "Destination Net Prohibited";
+	g_data.emsg._0[10] = "Destination Host Prohibited";
+	g_data.emsg._0[11] = "Destination Net Unreachable for Type of Service";
+	g_data.emsg._0[12] = "Destination Host Unreachable for Type of Service";
+	g_data.emsg._0[13] = "Packet filtered";
+	g_data.emsg._0[14] = "Precedence Violation";
+	g_data.emsg._0[15] = "Precedence Cutoff";
+	g_data.emsg._5[0] = "Redirect Network";
+	g_data.emsg._5[1] = "Redirect Host";
+	g_data.emsg._5[2] = "Redirect Type of Service and Network";
+	g_data.emsg._5[3] = "Redirect Type of Service and Host";
 	g_data.emsg._11[0] = "Time to live exceeded";
 	g_data.emsg._11[1] = "Fragment reassembly time exceeded";
 }

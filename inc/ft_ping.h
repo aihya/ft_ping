@@ -79,6 +79,7 @@ typedef struct s_packet
 typedef struct	s_emsg
 {
 	char	*_0[16];
+	char	*_5[4];
 	char	*_11[2];
 }	t_emsg;
 
