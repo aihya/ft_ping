@@ -44,6 +44,7 @@ typedef struct s_dest
 	struct sockaddr_in	*sin;
 	struct sockaddr		*sa;
 	struct addrinfo		ai;
+	struct addrinfo		*result;
 	char			*target;
 }	t_dest;
 

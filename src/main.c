@@ -115,8 +115,7 @@ uint16_t	ft_ntohs(uint16_t dword)
 
 void	get_addrinfo()
 {
-	struct addrinfo	hints;
-	struct addrinfo	*result, *p;
+	struct addrinfo	hints, *p;
 	int				ret;
 
 	hints = (struct addrinfo){0};
@@ -124,13 +123,13 @@ void	get_addrinfo()
 	hints.ai_socktype = SOCK_RAW;
 	hints.ai_protocol = IPPROTO_ICMP;
 
-	ret = getaddrinfo(g_data.target, NULL, &hints, &result);
+	ret = getaddrinfo(g_data.target, NULL, &hints, &g_data.dest.result);
 	if (ret < 0)
 	{
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(ret));
+		fprintf(stderr, "ping: %s: %s\n", g_data.target, gai_strerror(ret));
 		exit(errno);
 	}
-	for (p = result; p; p = p->ai_next)
+	for (p = g_data.dest.result; p; p = p->ai_next)
 	{
 		if (p->ai_family == AF_INET && 
 			p->ai_socktype == SOCK_RAW &&
@@ -140,7 +139,6 @@ void	get_addrinfo()
 	ft_memcpy(&g_data.dest.ai, p, sizeof(g_data.dest.ai));
 	g_data.dest.sa = g_data.dest.ai.ai_addr;
 	g_data.dest.sin = (struct sockaddr_in *)(g_data.dest.sa);
-	// freeaddrinfo(result);
 }
 
 
