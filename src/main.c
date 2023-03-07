@@ -339,7 +339,10 @@ void	calculate_ewma()
 
 	rtt = g_data.stt.rtt.tail;
 	diff = get_time_diff(&rtt->send, &rtt->recv);
-	g_data.stt.rtt.ewma = 0.507 * diff + (1 - 0.507) * g_data.stt.rtt.ewma;
+    if (g_data.stt.rtt.ewma == 0)
+        g_data.stt.rtt.ewma = diff;
+    else
+        g_data.stt.rtt.ewma = 0.5 * diff + (1 - 0.5) * g_data.stt.rtt.ewma;
 }
 
 void	calculate_mdev()
