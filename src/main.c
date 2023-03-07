@@ -381,14 +381,15 @@ void	print_error()
 	struct iphdr	*ip, *oip;
 	struct icmphdr	*icmp, *oicmp;
 	struct in_addr	saddr;
-	char			*error;
 
 	ip    = (struct iphdr   *)(g_data.queue.buff);
     icmp  = (struct icmphdr *)(g_data.queue.buff + (ip->ihl<<2));
 	oip   = (struct iphdr   *)(g_data.queue.buff + (ip->ihl<<2) + sizeof(icmp));
 	oicmp = (struct icmphdr *)(g_data.queue.buff + (ip->ihl<<2) + ICMP_HDRLEN + (oip->ihl<<2));
+
 	if (oicmp->un.echo.id != (uint16_t)getpid())
 		return ;
+
 	saddr.s_addr = ip->saddr;
     set_presentable(saddr);
     if (g_data.opt.options & OPT_n)
@@ -398,8 +399,8 @@ void	print_error()
         set_hostname(saddr);
         printf("From %s (%s) ", g_data.hostname, g_data.presentable);
     }
-    error = set_packet_error_message(icmp->type, icmp->code);
-    printf("icmp_seq=%d %s\n", oicmp->un.echo.sequence, error);
+    printf("icmp_seq=%d ", oicmp->un.echo.sequence);
+    pr_error_message(icmp->type, icmp->code, ip->frag_off >> 13);
 }
 
 
