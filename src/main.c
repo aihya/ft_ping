@@ -247,14 +247,56 @@ void	print_verbose(void)
 }
 
 
-// TODO: manage option -v in else
-char    *set_packet_error_message(int type, int code)
+static void	pr_error_message(int type, int code, int info)
 {
 	if (type == ICMP_DEST_UNREACH)
-		return (set_destination_unreachable(code));
+	{
+		if (code >= 0 && code <= 15)
+		{
+			if (code == ICMP_FRAG_NEEDED)
+				printf(g_data.emsg._0[code], info);
+			else
+				printf("%s\n", g_data.emsg._0[code]);
+		}
+		else
+			printf("Dest Unreachable, Bad Code: %d\n", code);
+	}
+	else if (type == ICMP_SOURCE_QUENCH)
+		printf("Source Quench\n");
+	else if (type == ICMP_REDIRECT)
+	{
+		if (code >= 0 && code <= 3)
+			printf("%s\n", g_data.emsg._5[code]);
+		else
+			printf("Redirect, Bad Code: %d\n", code);
+	}
+	else if (type == ICMP_ECHO)
+		printf("Echo Request\n");
 	else if (type == ICMP_TIME_EXCEEDED)
-		return (set_time_exceeded(code));
-    return (NULL);
+	{
+		if (code == 0 || code == 1)
+			printf("%s\n", g_data.emsg._11[code]);
+		else
+			printf("Time exceeded, Bad Code: %d\n", code);
+	}
+	else if (type == ICMP_PARAMETERPROB)
+		printf("Parameter Problem: Bad IP header\n");
+	else if (type == ICMP_TIMESTAMP)
+		printf("Timestamp\n");
+	else if (type == ICMP_TIMESTAMPREPLY)
+		printf("Timestamp Reply\n");
+	else if (type == ICMP_INFO_REQUEST)
+		printf("Information Request\n");
+	else if (type == ICMP_INFO_REPLY)
+		printf("Information Reply\n");
+	else if (type == ICMP_ADDRESS)
+		printf("Address Mask Request\n");
+	else if (type == ICMP_ADDRESSREPLY)
+		printf("Address Mask Reply\n");
+	else
+		printf("Bad ICMP type: %d\n", type);
+	if (g_data.opt.options & OPT_v)
+		print_verbose();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
