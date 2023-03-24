@@ -43,7 +43,6 @@ void	parse_options(int nargs, char **args)
 	int	i;
 
 	g_data.opt.t = MAXTTL;
-	g_data.opt.i = 1;
 	g_data.opt.c = -1;
 	g_data.opt.s = 56;
 	i = 0;
@@ -57,8 +56,15 @@ void	parse_options(int nargs, char **args)
 			g_data.opt.options |= OPT_n;
 		else if (!ft_strcmp("-t", args[i]))
 		{
-			if (i+1 < nargs && ft_isnumber(args[i+1]) && ft_atoi(args[i+1]) > 0)
+			if (i+1 < nargs)
 			{
+				long long int	value = ft_atoll(args[i+1]);
+				if (value < 0 || value > 255)
+				{
+					fprintf(stderr, "ping: invalid argument: %s", args[i+1]);
+					fprintf(stderr, ": out of range: 0 <= value <= 255\n");
+					exit(1);
+				}
 				g_data.opt.options |= OPT_t;
 				g_data.opt.t = ft_atoi(args[i+1]);
 				i += 2;
@@ -67,21 +73,9 @@ void	parse_options(int nargs, char **args)
 			printf("ping: option requires an argument '%s'\n", args[i]);
 			usage(true, 1);
 		}
-		else if (!ft_strcmp("-s", args[i]))
-		{
-			if (i+1 < nargs && ft_isnumber(args[i+1]) && ft_atoi(args[i+1]) >= 0)
-			{
-				g_data.opt.options |= OPT_s;
-				g_data.opt.s = ft_atoi(args[i+1]);
-				i += 2;
-				continue;
-			}
-			printf("ping: option requires an argument '%s'\n", args[i]);
-			usage(true, 1);
-		}
 		else if (!ft_strcmp("-c", args[i]))
 		{
-			if (i+1 < nargs && ft_isnumber(args[i+1]) && ft_atoi(args[i+1]) > 0)
+			if (i+1 < nargs && ft_isnumber(args[i+1]))
 			{
 				g_data.opt.options |= OPT_c;
 				g_data.opt.c = ft_atoi(args[i+1]);
@@ -90,6 +84,22 @@ void	parse_options(int nargs, char **args)
 			}
 			printf("ping: option requires an argument '%s'\n", args[i]);
 			usage(true, 1);
+		}
+		else if (!ft_strcmp("-i", args[i]))
+		{
+			if (i+1 < nargs)
+			{
+				long long int	value = ft_atoll(args[i+1]);
+				if (value < 0 || value > 2147483)
+				{
+					fprintf(stderr, "ping: bad timing interval: %s\n", args[i+1]);
+					exit(1);
+				}
+				g_data.opt.options |= OPT_t;
+				g_data.opt.t = ft_atoi(args[i+1]);
+				i += 2;
+				continue;
+			}
 		}
 		else if (args[i][0] == '-')
 		{
@@ -100,7 +110,6 @@ void	parse_options(int nargs, char **args)
 			g_data.target = args[i];
 		i++;
 	}
-	g_data.packet.size = ICMP_HDRLEN + g_data.opt.s;
 }
 
 
@@ -414,14 +423,15 @@ void	print_icmp_reply(ssize_t bytes, struct timeval *rtime)
     char			*packet;
 
     packet = g_data.queue.buff;
-    ip = (struct iphdr *)packet;
+    ip   = (struct iphdr *)packet;
     icmp = (struct icmphdr *)(packet + (ip->ihl << 2));
 	saddr.s_addr = ip->saddr;
+
 	set_presentable(saddr);
 	if (g_data.opt.options & OPT_n)
 	{
 		printf("%lu bytes from %s: icmp_seq=%d ttl=%d",
-			bytes - ICMP_HDRLEN - IPV4_HDRLEN,
+			bytes - IPV4_HDRLEN,
 			g_data.presentable,
 			icmp->un.echo.sequence,
 			ip->ttl
@@ -436,6 +446,7 @@ void	print_icmp_reply(ssize_t bytes, struct timeval *rtime)
 			icmp->un.echo.sequence,
 			ip->ttl);
 	}
+
 	if (ft_ntohs(ip->tot_len) - IPV4_HDRLEN < g_data.packet.size)
 		printf(" (truncated)");
 	else if ((size_t)g_data.opt.s >= sizeof(struct timeval))
@@ -563,14 +574,13 @@ void	setup_send_packet(void)
 {
 	struct icmphdr	*icmp;
 
-	ft_memset(g_data.packet.buff, 0x00, g_data.packet.size);
+	ft_memset(g_data.packet.buff, 0x00, sizeof(g_data.packet.buff));
 	icmp = (struct icmphdr *)g_data.packet.buff;
 	icmp->type = ICMP_ECHO;
 	icmp->code = 0;
 	icmp->un.echo.id = (uint16_t)getpid();
 	icmp->un.echo.sequence = g_data.sequence;
-	if ((size_t)g_data.opt.s >= sizeof(struct timeval))
-		gettimeofday((void *)(icmp + 1), 0);
+	gettimeofday((void *)(icmp + 1), 0);
 	icmp->checksum = 0;
 	icmp->checksum = calc_checksum((uint16_t *)icmp, g_data.packet.size);
 }
@@ -615,7 +625,7 @@ void	sig_handler(int sig)
 			gettimeofday(&g_data.start_time, 0);
 		}
 		first_send = false;
-		alarm(g_data.opt.i);
+		alarm(1);
 	}
 	else if (sig == SIGINT)
 	{

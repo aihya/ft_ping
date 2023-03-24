@@ -18,7 +18,7 @@ SRC_NAME =	ft_abs.c \
 			ft_atoi.c \
 			ft_begins_with.c \
 			ft_ends_with.c \
-			ft_bzero.c \
+			ft_atoll.c \
 			ft_chain_cpy.c \
 			ft_chain_free.c \
 			ft_chain_push.c \
@@ -92,7 +92,8 @@ SRC_NAME =	ft_abs.c \
 			ft_strmin.c \
 			ft_nbr_base.c \
 			ft_putnbr_base.c \
-			ft_isnumber.c
+			ft_isnumber.c \
+			ft_bzero.c
 
 OBJ_NAME =	$(SRC_NAME:.c=.o)
 

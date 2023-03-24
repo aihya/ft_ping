@@ -22,7 +22,7 @@
 # define LAST_POS -1
 # define HEX_CHARS "0123456789abcdef"
 
-int	ft_isnumber(const char *str);
+int	    ft_isnumber(const char *str);
 char	*ft_strappend(char **a_s1, char c, int overwrite);
 int		ft_isalphanumeric(char c);
 void	ft_print_chain(char ***a_chain, char *del);
@@ -102,5 +102,6 @@ size_t	ft_strmax(char **arr);
 size_t	ft_strmin(char **arr);
 char    *ft_nbr_base(unsigned long long n, unsigned int base, int padding);
 void    ft_putnbr_base(unsigned long long n, unsigned int base, int padding);
+long long int   ft_atoll(const char *str);
 
 #endif

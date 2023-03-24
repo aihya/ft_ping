@@ -52,10 +52,8 @@ typedef struct s_options
 {
 	int options;
 	int t;
-	int s;
+	long long c;
 	int n;
-	int	c;
-	int	i;
 }	t_options;
 
 typedef struct s_socket
@@ -72,8 +70,7 @@ typedef struct	s_queue
 
 typedef struct s_packet
 {
-	char	buff[IP_MAXPACKET];
-	size_t	size;
+	char	buff[sizeof(struct icmphdr) + sizeof(struct timeval)];
 }	t_packet;
 
 typedef struct	s_emsg
